@@ -18,56 +18,56 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Details",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
-              name={focused ? "home" : "home-outline"}
+              name={focused ? "information-circle" : "information-circle-outline"}
               color={color}
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="members"
         options={{
-          title: "explore",
+          title: "members",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
-              name={focused ? "compass" : "compass-outline"}
+              name={focused ? "people" : "people-outline"}
               color={color}
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="create"
+        name="chat"
         options={{
-          title: "create chama",
+          title: "chats",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
-              name={focused ? "add-circle" : "add-circle-outline"}
+              name={focused ? "chatbubbles" : "chatbubbles-outline"}
               color={color}
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="notification"
+        name="schedule"
         options={{
-          title: "notifications",
+          title: "schedule",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
-              name={focused ? "notifications" : "notifications-outline"}
+              name={focused ? "calendar" : "calendar-outline"}
               color={color}
             />
           ),
         }}
-      />
+      />     
 
       <Tabs.Screen
-        name="wallet"
+        name="account"
         options={{
-          title: "wallet",
+          title: "account",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
               name={focused ? "wallet" : "wallet-outline"}
