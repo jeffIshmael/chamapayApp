@@ -79,23 +79,6 @@ const LoginScreen = () => {
     }
   };
 
-  const sendcUSD = async () => {
-    try {
-      const response = await axios
-        .post("http://localhost:3000/pay", {
-          address: "0xA0A1869E5B987a87BCfbD0aF9C73327ABc0D13E1",
-          amount: 1,
-        })
-        .then((response) => console.log(response.data))
-        .catch((error) => {
-          console.error("Error response:", error.response.data); // Log the server response
-          alert("Registration failed: " + error.response.data.error);
-        });
-      console.log(response.data);
-    } catch (error) {
-      console.log("error:", error);
-    }
-  };
 
   return (
     <View style={styles.container}>
