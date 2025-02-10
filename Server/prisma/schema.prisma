@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "sqlite"
+  url       = "file:./dev.db"
+ 
+}
+
+model User {
+  id             Int            @id @default(autoincrement())
+  email        String           @unique
+  name           String?
+  phoneNo        Int?
+  address        String
+  privKey        String
+  mnemonics       String
+  password String
+  role           String?
+  profile          String?
+  createdChamas  Chama[]        @relation("AdminChamas")
+  chamas         ChamaMember[]
+  joinRequests   ChamaRequest[]
+  notifications  Notification[]
+  payments       Payment[]
+  messages       Message[] // Added relation to Message
+}
+
+model Chama {
+  id            Int            @id @default(autoincrement())
+  name          String
+  slug          String         @unique
+  type          String
+  startDate     DateTime
+  payDate       DateTime
+  cycleTime     Int
+  started       Boolean        @default(false)
+  amount        Int
+  maxNo         Int
+  adminId       Int
+  createdAt     DateTime       @default(now())
+  image         String?
+  admin         User           @relation("AdminChamas", fields: [adminId], references: [id])
+  members       ChamaMember[]
+  requests      ChamaRequest[]
+  notifications Notification[]
+  payments      Payment[]
+  messages      Message[] // Added relation to Message
+}
+
+model ChamaMember {
+  id      Int      @id @default(autoincrement())
+  userId  Int
+  chamaId Int
+  chama   Chama    @relation(fields: [chamaId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  payDate DateTime // To track the payment rotation date
+}
+
+model Payment {
+  id      Int      @id @default(autoincrement())
+  amount  Int
+  doneAt  DateTime @default(now())
+  txHash  String
+  userId  Int
+  chamaId Int
+  chama   Chama    @relation(fields: [chamaId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  message   String
+  senderId  Int
+  requestId Int
+  userId    Int
+  chamaId   Int?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  chama     Chama?   @relation(fields: [chamaId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ChamaRequest {
+  id        Int      @id @default(autoincrement())
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  userId    Int
+  chamaId   Int
+  chama     Chama    @relation(fields: [chamaId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  chama     Chama    @relation(fields: [chamaId], references: [id])
+  chamaId   Int
+  sender    User     @relation(fields: [senderId], references: [id])
+  senderId  Int
+  text      String
+  timestamp DateTime @default(now())
+}

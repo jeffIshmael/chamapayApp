@@ -1,0 +1,20 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "app/login.jsx",
+    "app/explore.jsx",
+    "app/index.jsx",
+    "app/(tabs)/index.jsx",
+    "app/(chamatabs)/[chamaId]/details.jsx"
+, "app/(chamatabs)/[chamaId]/schedule.tsx", "components/Withdrawal.jsx", "components/Pay.jsx", "app/users.jsx", "components/CreatePublic.jsx", "components/CreateFamily.jsx", "app/_layout.jsx", "app/(chamatabs)/[chamaId]/_layout.jsx"  ]
+}
