@@ -1,6 +1,27 @@
 # CHAMAPAY
 
-![Chamapay Logo](logo.png)
+<p align="center">
+  <img src="./logo.png" alt="Chamapay Logo" width="120" style="border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+  <h1 align="center">Revolutionizing Community Savings with Blockchain</h1>
+</p>
+
+<p align="center">
+  <strong>Digital Chamas · Transparent · Secure · Borderless</strong>
+</p>
+
+<p align="center">
+  <a href="#introduction">Introduction</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#how-it-works">How It Works</a> ·
+  <a href="#getting-started">Get Started</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-Mobile%20%26%20Web-brightgreen" alt="Platform">
+  <img src="https://img.shields.io/badge/Blockchain-Celo-yellow" alt="Blockchain">
+  <img src="https://img.shields.io/badge/License-MIT-blue" alt="License">
+</p>
+
 
 ## Introduction
 
@@ -173,20 +194,21 @@ Chamapay solves these problems by offering a **digital circular savings platform
         npm start
 
     ```
-4. In the server folder, change the .env.example to .env and fill in the variables as instructed.
-5. Expose the server with ngrok:(in another terminal.)
+
+4.  In the server folder, change the .env.example to .env and fill in the variables as instructed.
+5.  Expose the server with ngrok:(in another terminal.)
 
     ```bash
         ngrok http http://localhost:3000
     ```
-6. Update endpoint.ts with the ngrok URL.(in chamapayApp/Application/constants).
-7. Scan the QR code in Expo Go to launch the app.
+
+6.  Update endpoint.ts with the ngrok URL.(in chamapayApp/Application/constants).
+7.  Scan the QR code in Expo Go to launch the app.
 
 ---
 
 ## Contact
+
 For any questions or feedback, feel free to reach out to us:
 
 Email: [chamapay37@gmail.com](chamapay37@gmail.com).
-    
-
