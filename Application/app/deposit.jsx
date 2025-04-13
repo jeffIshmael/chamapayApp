@@ -1,14 +1,16 @@
 import { View, Text, TouchableOpacity, TextInput, Image } from 'react-native';
 import React, { useState } from 'react';
+
 import Ionicons from "@expo/vector-icons/Ionicons";
 import DepositQr from "@/components/DepositQr";
+import { background } from "@/constants/Colors";
 
 const DepositScreen = () => {
     const [mpesaVisible, setMpesaVisible] = useState(false);
     const walletAddress = "0x3524..";
 
     return (
-        <View style={{ flex: 1, padding: 16, backgroundColor: '#F7F9FC', alignItems: 'center' }}>
+        <View style={{ flex: 1, padding: 16, backgroundColor: background, alignItems: 'center' }}>
             <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>Deposit from:</Text>
             
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '90%', marginBottom: 20 }}>

@@ -4,12 +4,11 @@ import { View, Text, StyleSheet, FlatList } from "react-native";
 
 import { url } from "@/constants/Endpoint";
 
-const DepositsHistory = () => {
+const DepositsHistory = ({ chamaId }) => {
   const formatDate = (timestamp) => {
     const date = new Date(timestamp * 1000);
     return date.toLocaleDateString();
   };
-  const chamaId = 5;
 
   const [deposits, setDeposits] = useState([]);
 
@@ -27,8 +26,7 @@ const DepositsHistory = () => {
         });
         const results = await response.json();
         if (response.ok) {
-          console.log(results);
-          setDeposits(results);
+          setDeposits(results.deposits);
         } else {
           console.log("an issue with the api");
           console.log(response);
@@ -40,14 +38,27 @@ const DepositsHistory = () => {
     getDeposits();
   }, []);
 
+  const dateFormat = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  });
+
   const renderItem = ({ item }) => (
     <View style={styles.depositItem}>
       <View style={styles.itemHeader}>
-        <Text style={styles.userName}>{item.user.name || `${(item.user.address).slice(0, 4)}...${(item.user.address).slice(-4)}`}</Text>
-        <Text style={styles.dateText}>{formatDate(item.payment.doneAt)}</Text>
+        <Text style={styles.userName}>You locked </Text>
       </View>
       <View style={styles.amountInfo}>
-        <Text style={styles.amountText}>{item.payment.amount} cKES</Text>
+        <Text style={styles.amountText}>
+          {Number(item.amount) / 10 ** 18} cKES
+        </Text>
+        <Text style={styles.dateText}>
+          {dateFormat.format(new Date(item.doneAt))}
+        </Text>
       </View>
     </View>
   );

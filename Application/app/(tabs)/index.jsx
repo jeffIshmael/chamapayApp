@@ -10,17 +10,17 @@ import {
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Avatar } from "react-native-elements";
-import { Ionicons } from "@expo/vector-icons";
 
 import { url } from "@/constants/Endpoint";
 import { duration } from "@/constants/Cycle";
+import { background } from "@/constants/Colors";
 
 const HomeScreen = () => {
   const router = useRouter();
   const [joinedChamas, setJoinedChamas] = useState([]);
   const [publicChamas, setPublicChamas] = useState([]);
   const [privateChamas, setPrivateChamas] = useState([]);
-  const [user , setUser] = useState({});
+  const [user, setUser] = useState({});
 
   useEffect(() => {
     const getUserChamas = async () => {
@@ -31,15 +31,19 @@ const HomeScreen = () => {
       }
 
       try {
-        const response = await fetch(`${url}/mychamas`, {
+        const response = await fetch(`${url}/chama/mychamas`, {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
         const results = await response.json();
         if (response.ok) {
           setJoinedChamas(results.chamas);
-          setPublicChamas((results.chamas).filter((chama) => chama.type === "Public"));
-          setPrivateChamas((results.chamas).filter((chama) => chama.type === "Private"));
+          setPublicChamas(
+            results.chamas.filter((chama) => chama.type === "Public")
+          );
+          setPrivateChamas(
+            results.chamas.filter((chama) => chama.type === "Private")
+          );
           setUser(results.user);
         } else {
           console.log(results.message);
@@ -49,7 +53,7 @@ const HomeScreen = () => {
       }
     };
     getUserChamas();
-  }, []);
+  }, [joinedChamas, publicChamas, privateChamas]);
 
   const handleChamaNavigation = (chamaId) => {
     router.push({ pathname: "/(chamatabs)/[chamaId]", params: { chamaId } });
@@ -65,7 +69,8 @@ const HomeScreen = () => {
     >
       <Text style={styles.chamaTitle}>{item.name}</Text>
       <Text style={styles.chamaInfo}>
-        Amount: {item.amount} cKES / {duration(item.cycleTime)}
+        Amount: {Number(item.amount) / 10 ** 18} cKES /{" "}
+        {duration(item.cycleTime)}
       </Text>
       <Text style={styles.chamaInfo}>
         Members: {item.members.length} {type === "Public" && `/ ${item.maxNo}`}{" "}
@@ -85,7 +90,11 @@ const HomeScreen = () => {
           <Avatar
             size="medium"
             rounded
-            title={user?.name ? (user.name.slice(0, 1)).toUpperCase() : user?.email && ((user?.email).slice(0, 1)).toUpperCase()}
+            title={
+              user?.name
+                ? user.name.slice(0, 1).toUpperCase()
+                : user?.email && (user?.email).slice(0, 1).toUpperCase()
+            }
             containerStyle={styles.avatar}
           />
         </TouchableOpacity>
@@ -131,7 +140,7 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E0F7FA",
+    backgroundColor: background,
     paddingHorizontal: 20,
     paddingTop: 50,
   },

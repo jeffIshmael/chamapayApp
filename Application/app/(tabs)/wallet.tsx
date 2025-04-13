@@ -56,13 +56,12 @@ export default function WalletScreen() {
         const Details = await response.json();
 
         if (response.ok) {
-          console.log(Details);
           setUserDetails(Details);
         } else {
-          console.error("Error fetching user details:", Details.message);
+          console.log("Error fetching user details:", Details.message);
         }
       } catch (error) {
-        console.error("Error fetching user details:", error);
+        console.log("Error fetching user details:", error);
       } finally {
         setLoading(false); // Ensure loading stops after fetch completes
       }
@@ -102,7 +101,7 @@ export default function WalletScreen() {
         <Text style={styles.headerText}>Balance</Text>
         <View style={styles.balanceContainer}>
           <Text style={styles.balanceText}>
-            {visible ? (Number(userDetails?.balance) / 10 ** 18).toFixed(2) : "***"}{" "}
+            {visible ? (Number(userDetails?.balance)).toFixed(3) : "***"}{" "}
             cKES
           </Text>
           <TouchableOpacity onPress={toggleVisible} style={styles.iconButton}>

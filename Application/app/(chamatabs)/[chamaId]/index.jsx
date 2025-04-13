@@ -11,19 +11,24 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PaymentModal from "@/components/Pay";
 import Ionicons from "@expo/vector-icons/Ionicons";
+
 import { url } from "@/constants/Endpoint";
 import { duration } from "@/constants/Cycle";
 import { useChamaId } from "../../context/ChamaContext";
+import Lock from "@/components/Lock";
 
 const Details = () => {
   const [started, setStarted] = useState(true);
   const [openModal, setOpenModal] = useState(false);
+  const [openLockModal, setOpenLockModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [buttonText, setButtonText] = useState("");
+  const [errorText, setErrorText] = useState("");
   const [included, setIncluded] = useState(true);
   const [chama, setChama] = useState(null); // Initialize as null
   const [loading, setLoading] = useState(true); // Add loading state
   const chamaId = useChamaId();
   const router = useRouter();
-
 
   useEffect(() => {
     if (!chamaId) {
@@ -31,7 +36,6 @@ const Details = () => {
       setLoading(false); // Stop loading if no chamaId is provided
       return;
     }
-
     const fetchChama = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
@@ -49,17 +53,17 @@ const Details = () => {
         const results = await response.json();
 
         if (response.ok) {
-          setChama(results);
+          setChama(results.chama);
+          setIncluded(results.isMember);
         } else {
-          console.error("Error fetching chama details:", results.message);
+          console.log("Error fetching chama details:", results.message);
         }
       } catch (error) {
-        console.error("Error fetching chama details:", error);
+        console.log("Error fetching chama details:", error);
       } finally {
         setLoading(false); // Stop loading after fetch completes
       }
     };
-
     fetchChama();
   }, [chamaId]);
 
@@ -72,11 +76,59 @@ const Details = () => {
     hour12: false,
   });
 
+  // function to handle locking to join public chama
+  const handleLock = async (amount, chamaId, chamaName) => {
+    setErrorText("");
+    try {
+      setIsProcessing(true);
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        console.log("No token found");
+        return;
+      }
+      setButtonText(`Locking ...`);
+      const response = await fetch(`${url}/chama/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: amount,
+          chamaId: chamaId,
+          blockchainId: chama.blockchainId || 0,
+          creation: false,
+        }),
+      });
+      const results = await response.json();
+      // console.log(results);
+      if (response.ok) {
+        //return the txHash
+        Alert.alert(
+          "Success",
+          `✨ Congratulations.✨\n\nYou've successfully joined ${chamaName}!`,
+          [{ text: "OK" }]
+        );
+      } else {
+        setErrorText(results.message || "Failed to create chama");
+      }
+    } catch (error) {
+      console.log(error);
+      setErrorText("Network error. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   if (loading) {
     // Render a loading indicator while data is being fetched
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#00796B" style={styles.loading} />
+        <ActivityIndicator
+          size="large"
+          color="#00796B"
+          style={styles.loading}
+        />
       </View>
     );
   }
@@ -112,7 +164,7 @@ const Details = () => {
         <View style={styles.imageContainer}>
           <Image
             source={{
-              uri: `https://ipfs.io/ipfs/Qmd1VFua3zc65LT93Sv81VVu6BGa2QEuAakAFJexmRDGtX/${(chama.id).toString()}.jpg`,
+              uri: `https://ipfs.io/ipfs/Qmd1VFua3zc65LT93Sv81VVu6BGa2QEuAakAFJexmRDGtX/${chama.id.toString()}.jpg`,
             }}
             style={styles.image}
           />
@@ -121,7 +173,7 @@ const Details = () => {
         {/* Chama Details */}
         <Text style={styles.chamaTitle}>{chama.name}</Text>
         <Text style={styles.chamaAmount}>
-          {chama.amount} cKES/{duration(chama.cycleTime)}
+          {Number(chama.amount) / 10 ** 18} cKES/{duration(chama.cycleTime)}
         </Text>
         <Text style={styles.chamaMembers}>
           {(chama.members || []).length}{" "}
@@ -136,7 +188,10 @@ const Details = () => {
         {/* Pay Button */}
         <View style={styles.buttonContainer}>
           {!included ? (
-            <TouchableOpacity style={styles.joinButton}>
+            <TouchableOpacity
+              onPress={() => setOpenLockModal(true)}
+              style={styles.joinButton}
+            >
               <Text style={styles.buttonText}>Join</Text>
             </TouchableOpacity>
           ) : (
@@ -151,7 +206,12 @@ const Details = () => {
 
         {/* SVG/Icon */}
         {included && (
-          <TouchableOpacity style={styles.iconContainer} onPress={() => {router.push("/(chamatabs)/[chamaId]/chat")}}>
+          <TouchableOpacity
+            style={styles.iconContainer}
+            onPress={() => {
+              router.push("/(chamatabs)/[chamaId]/chat");
+            }}
+          >
             <Ionicons name="chatbubbles-outline" size={24} />
           </TouchableOpacity>
         )}
@@ -164,8 +224,32 @@ const Details = () => {
           onClose={() => setOpenModal(false)}
           chamaId={chamaId}
           chamaName={chama.name}
+          blockchainId={chama.blockchainId}
         />
       )}
+
+      {/* Lock Modal to join public chama*/}
+      {
+        <Lock
+          visible={openLockModal}
+          onClose={() => {
+            setOpenLockModal(false);
+          }}
+          onProceed={() =>
+            handleLock(
+              (Number(chama?.amount) / 10 ** 18).toString() || "0",
+              chama?.id || 0,
+              chama?.name || ""
+            )
+          }
+          loading={isProcessing}
+          errText={errorText}
+          buttonText={buttonText}
+          amount={Number(chama?.amount) / 10 ** 18 || 0}
+          name={chama?.name || ""}
+          creation={false}
+        />
+      }
     </View>
   );
 };

@@ -1,17 +1,28 @@
 import React, { Suspense, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  Animated,
+} from "react-native";
+// import { Animated } from 'react-native';
 import Ionicons from "@expo/vector-icons/Ionicons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Svg, { Circle, Text as SvgText } from "react-native-svg"; // Import SVG components
+
+import { useChamaId } from "@/app/context/ChamaContext";
+import { url } from "@/constants/Endpoint";
 import DepositsHistory from "@/components/Deposit";
 import WithdrawalsHistory from "@/components/Withdrawal";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { url } from "@/constants/Endpoint";
-import Svg, { Circle, Text as SvgText } from "react-native-svg"; // Import SVG components
+import { formatTimeRemaining } from "@/constants/Cycle";
 
 // Constants for the circle
 const screenWidth = Dimensions.get("window").width;
 const circleRadius = 100; // Radius of the circle
 const strokeColor = "#66d9d0"; // Color of the progress bar
-const trackColor = "#e2e8f0"; // Background color of the circle
+const trackColor = "#E0F7FA"; // Background color of the circle
 
 interface User {
   id: number;
@@ -19,9 +30,7 @@ interface User {
   address: string;
   role: string;
 }
-interface Member {
-  user: User;
-}
+
 interface Chama {
   id: number;
   name: string;
@@ -35,15 +44,16 @@ interface Chama {
   maxNo: number;
   adminId: number;
   createdAt: string;
-  members: Member[];
+  members: User[];
 }
 
 const ScheduleScreen = () => {
-  const [isPublic, setIsPublic] = useState(true);
   const [showDeposit, setShowDeposit] = useState(true);
   const [chama, setChama] = useState<Chama>();
-  const [members, setMembers] = useState<Member[]>();
-  const chamaId = 5;
+  const [members, setMembers] = useState<User[]>();
+  const [lockedAmount, setLockedAmount] = useState("");
+  const [balance, setBalance] = useState<number | null>(null);
+  const chamaId = useChamaId();
 
   useEffect(() => {
     const fetchChama = async () => {
@@ -59,13 +69,15 @@ const ScheduleScreen = () => {
         });
         const results = await response.json();
         if (response.ok) {
-          setChama(results);
-          setMembers(results.members);
+          setChama(results.chama);
+          setMembers(results.chama.members);
+          setLockedAmount(results.chamaBalance[1]);
+          setBalance(Number(results.chamaBalance[0]));
         } else {
           console.log(results.message);
         }
       } catch (error) {
-        console.error(error);
+        console.log(error);
       }
     };
     fetchChama();
@@ -75,9 +87,9 @@ const ScheduleScreen = () => {
     day: "numeric",
     month: "short",
     year: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false,
+    // hour: "numeric",
+    // minute: "numeric",
+    // hour12: false,
   });
 
   const toggleView = () => {
@@ -86,21 +98,48 @@ const ScheduleScreen = () => {
 
   // Calculate progress percentage
   const calculateProgress = () => {
-    if (!chama?.startDate || !chama?.payDate) return 0;
+    if (!chama?.startDate || !chama?.cycleTime || !chama?.members) return 0;
 
-    const startDate = new Date(chama.startDate).getTime();
-    const endDate = new Date(chama.payDate).getTime();
+    const startDate = new Date(chama.startDate);
+    const startTime = startDate.getTime();
+
+    // Calculate end date by adding (cycleTime * members.length) days to start date
+    const endDate = new Date(startDate);
+    endDate.setDate(
+      startDate.getDate() + chama.cycleTime * chama.members.length
+    );
+    const endTime = endDate.getTime();
+
     const currentTime = Date.now();
 
-    if (currentTime < startDate) return 0;
-    if (currentTime >= endDate) return 100;
+    if (currentTime < startTime) return 0;
+    if (currentTime >= endTime) return 100;
 
-    const totalDuration = endDate - startDate;
-    const elapsedDuration = currentTime - startDate;
+    const totalDuration = endTime - startTime;
+    const elapsedDuration = currentTime - startTime;
     return Math.min((elapsedDuration / totalDuration) * 100, 100);
   };
 
   const progress = calculateProgress();
+
+  //function to ge a members payout date
+  const getMemberPayoutDate = (
+    startDate: Date,
+    durationDays: number,
+    memberIndex: number
+  ) => {
+    const payoutDate = new Date(startDate);
+    payoutDate.setDate(payoutDate.getDate() + durationDays * (memberIndex + 1));
+    return payoutDate;
+  };
+
+  // Get time remaining until chama starts
+  const getTimeUntilStart = () => {
+    if (!chama?.startDate) return "";
+    const startTime = new Date(chama.startDate).getTime();
+    const currentTime = Date.now();
+    return formatTimeRemaining(Math.max(0, startTime - currentTime));
+  };
 
   return (
     <ScrollView
@@ -139,7 +178,7 @@ const ScheduleScreen = () => {
             >
               <Ionicons name="lock-closed-outline" size={20} />
               <Text style={{ color: "#4A5568", marginHorizontal: 4 }}>
-                0 cKES
+                {Number(lockedAmount) / 10 ** 18} cKES
               </Text>
               <View
                 style={{
@@ -150,7 +189,7 @@ const ScheduleScreen = () => {
                 }}
               />
               <Text style={{ color: "#2D3748", marginHorizontal: 4 }}>
-                0 cKES
+                {balance!! / 10 ** 18} cKES
               </Text>
             </View>
           </View>
@@ -172,12 +211,13 @@ const ScheduleScreen = () => {
         >
           <View style={{ alignItems: "center", paddingHorizontal: 8 }}>
             <Text style={{ color: "#2D3748" }}>Chama Balance</Text>
-            <Text style={{ color: "#4A5568" }}>0 cKES</Text>
+            <Text style={{ color: "#4A5568" }}>{balance!! / 10 ** 18}cKES</Text>
           </View>
         </View>
       )}
 
       {/* Cycle progress container */}
+
       <View style={{ marginTop: 48, alignItems: "center" }}>
         <Suspense fallback={<Text>Loading...</Text>}>
           <View
@@ -203,21 +243,25 @@ const ScheduleScreen = () => {
                 strokeWidth={20}
                 fill="transparent"
               />
-              {/* Progress Track */}
-              <Circle
-                cx={circleRadius}
-                cy={circleRadius}
-                r={circleRadius - 20}
-                stroke={strokeColor}
-                strokeWidth={20}
-                fill="transparent"
-                strokeDasharray={`${((progress / 100) * 2 * Math.PI * (circleRadius - 20)).toFixed(
-                  2
-                )} ${2 * Math.PI * (circleRadius - 20)}`}
-                transform={`rotate(-90 ${circleRadius} ${circleRadius})`}
-              />
+              {/* Progress Track - only show if chama has started */}
+              {chama?.started && (
+                <Circle
+                  cx={circleRadius}
+                  cy={circleRadius}
+                  r={circleRadius - 20}
+                  stroke={strokeColor}
+                  strokeWidth={20}
+                  fill="transparent"
+                  strokeDasharray={`${(
+                    (progress / 100) *
+                    2 *
+                    Math.PI *
+                    (circleRadius - 20)
+                  ).toFixed(2)} ${2 * Math.PI * (circleRadius - 20)}`}
+                  transform={`rotate(-90 ${circleRadius} ${circleRadius})`}
+                />
+              )}
             </Svg>
-
             {/* Center Text */}
             <View
               style={{
@@ -230,43 +274,86 @@ const ScheduleScreen = () => {
                 alignItems: "center",
               }}
             >
-              <View style={{ alignItems: "center" }}>
-                <Text style={{ fontSize: 32, fontWeight: "bold" }}>CYCLE</Text>
-                <Text
-                  style={{ fontSize: 48, fontWeight: "600", marginTop: 16 }}
-                >
-                  {chama?.cycleTime || 1}
-                </Text>
-              </View>
+              {chama?.started ? (
+                <View style={{ alignItems: "center" }}>
+                  <Text style={{ fontSize: 32, fontWeight: "bold" }}>
+                    CYCLE
+                  </Text>
+                  <Text
+                    style={{ fontSize: 48, fontWeight: "600", marginTop: 16 }}
+                  >
+                    {chama?.cycleTime || 1}
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ alignItems: "center", padding: 16 }}>
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
+                    Starts in
+                  </Text>
+                  <Text
+                    style={{ fontSize: 24, fontWeight: "600", marginTop: 8 }}
+                  >
+                    {getTimeUntilStart()}
+                  </Text>
+                </View>
+              )}
             </View>
+            {/* Member clouds - only show if chama has started */}
+            {members?.map((member, index) => {
+              if (!chama?.startDate || !chama?.cycleTime) return null;
 
-            {/* Member clouds */}
-            {members?.map((member, index) => (
-              <View
-                key={index}
-                style={{
-                  position: "absolute",
-                  top: 125 + Math.sin((index / members.length) * 2 * Math.PI) * 100,
-                  left: 125 + Math.cos((index / members.length) * 2 * Math.PI) * 100,
-                  width: 100,
-                  height: 60,
-                  borderRadius: 30,
-                  backgroundColor: "#66d9d0",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  shadowColor: "#000",
-                  shadowOpacity: 0.2,
-                  padding: 8,
-                }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: "bold" }}>
-                  {member?.user?.name || "Unknown"}
-                </Text>
-                <Text style={{ fontSize: 10 }}>
-                  {dateFormat.format(Date.now())}
-                </Text>
-              </View>
-            ))}
+              const startDate = new Date(chama.startDate);
+              const payoutDate = getMemberPayoutDate(
+                startDate,
+                chama.cycleTime,
+                index
+              );
+              const isPastPayout = payoutDate.getTime() <= Date.now();
+
+              // Calculate angle for each member (evenly spaced around the circle)
+              const angle = (index / members.length) * 2 * Math.PI;
+              const distanceFromCenter = 100; // Distance from center of circle
+
+              return (
+                <Animated.View
+                  key={index}
+                  style={{
+                    position: "absolute",
+                    top: 125 + Math.sin(angle) * distanceFromCenter - 25, // Subtract half height
+                    left: 125 + Math.cos(angle) * distanceFromCenter - 45, // Subtract half width
+                    width: 90,
+                    height: 50,
+                    borderRadius: 30,
+                    backgroundColor: isPastPayout ? "#66d9d0" : "#E0F7FA",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    shadowColor: "#000",
+                    shadowOpacity: 0.2,
+                    padding: 4,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: "bold" }}>
+                    {chama.started ? member?.name || "Unknown" : "--"}
+                  </Text>
+                  <Text style={{ fontSize: 10 }}>
+                    {dateFormat.format(payoutDate)}
+                  </Text>
+                  {isPastPayout && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={16}
+                      color="#4CAF50"
+                    />
+                  )}
+                </Animated.View>
+              );
+            })}
           </View>
         </Suspense>
       </View>
@@ -312,7 +399,11 @@ const ScheduleScreen = () => {
         </View>
         {/* Conditionally render Withdrawals or Deposits */}
         <View style={{ marginTop: 8, width: "100%" }}>
-          {!showDeposit ? <WithdrawalsHistory /> : <DepositsHistory />}
+          {!showDeposit ? (
+            <WithdrawalsHistory />
+          ) : (
+            <DepositsHistory chamaId={chamaId} />
+          )}
         </View>
       </View>
     </ScrollView>

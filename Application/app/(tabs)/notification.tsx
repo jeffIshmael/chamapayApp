@@ -30,7 +30,7 @@ export default function NotificationsScreen() {
           console.log("No token found");
           return;
         }
-        const response = await fetch(`${url}/notifications`, {
+        const response = await fetch(`${url}/user/notifications`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,

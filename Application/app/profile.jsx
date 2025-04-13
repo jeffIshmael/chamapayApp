@@ -16,6 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { launchImageLibrary } from "react-native-image-picker";
 import { url } from "@/constants/Endpoint";
+import {background} from "@/constants/Colors";
 
 const ProfileScreen = () => {
   const [profileImage, setProfileImage] = useState(null);
@@ -159,7 +160,7 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F4F4F4",
+    backgroundColor: background,
     alignItems: "center",
     paddingTop: 50,
   },

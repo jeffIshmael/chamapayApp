@@ -3,28 +3,28 @@ generator client {
 }
 
 datasource db {
-  provider  = "sqlite"
-  url       = "file:./dev.db"
- 
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
-  id             Int            @id @default(autoincrement())
-  email        String           @unique
-  name           String?
-  phoneNo        Int?
-  address        String
-  privKey        String
-  mnemonics       String
-  password String
-  role           String?
-  profile          String?
-  createdChamas  Chama[]        @relation("AdminChamas")
-  chamas         ChamaMember[]
-  joinRequests   ChamaRequest[]
-  notifications  Notification[]
-  payments       Payment[]
-  messages       Message[] // Added relation to Message
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  name          String?
+  phoneNo       Int?
+  address       String
+  privKey       String
+  mnemonics     String
+  password      String
+  role          String?
+  profile       String?
+  createdChamas Chama[]        @relation("AdminChamas")
+  chamas        ChamaMember[]
+  joinRequests  ChamaRequest[]
+  notifications Notification[]
+  payments      Payment[]
+  messages      Message[] // Added relation to Message
+  lockedAmounts LockedAmount[]
 }
 
 model Chama {
@@ -36,7 +36,8 @@ model Chama {
   payDate       DateTime
   cycleTime     Int
   started       Boolean        @default(false)
-  amount        Int
+  amount        BigInt
+  blockchainId  Int
   maxNo         Int
   adminId       Int
   createdAt     DateTime       @default(now())
@@ -47,6 +48,7 @@ model Chama {
   notifications Notification[]
   payments      Payment[]
   messages      Message[] // Added relation to Message
+  lockedAmounts LockedAmount[]
 }
 
 model ChamaMember {
@@ -59,14 +61,14 @@ model ChamaMember {
 }
 
 model Payment {
-  id      Int      @id @default(autoincrement())
-  amount  Int
-  doneAt  DateTime @default(now())
-  txHash  String
-  userId  Int
-  chamaId Int
-  chama   Chama    @relation(fields: [chamaId], references: [id])
-  user    User     @relation(fields: [userId], references: [id])
+  id           Int      @id @default(autoincrement())
+  amount       BigInt
+  doneAt       DateTime @default(now())
+  txHash       String
+  userId       Int
+  chamaId      Int
+  chama        Chama    @relation(fields: [chamaId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
 }
 
 model Notification {
@@ -99,5 +101,15 @@ model Message {
   sender    User     @relation(fields: [senderId], references: [id])
   senderId  Int
   text      String
+  timestamp DateTime @default(now())
+}
+
+model LockedAmount {
+  id        Int      @id @default(autoincrement())
+  amount    BigInt
+  chamaId   Int
+  userId    Int
+  chama     Chama    @relation(fields: [chamaId], references: [id])
+  user      User @relation(fields: [userId], references: [id])
   timestamp DateTime @default(now())
 }

@@ -10,10 +10,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Alert,
 } from "react-native";
 
 import Lock from "@/components/Lock";
 import { isLoading } from "expo-font";
+
+interface Member {
+  user: string;
+  address: string;
+}
 
 interface Chama {
   adminId: number;
@@ -22,8 +28,9 @@ interface Chama {
   cycleTime: number;
   id: number;
   maxNo: number;
-  members: [];
+  members: Member[];
   name: string;
+  blockchainId:number;
   payDate: string;
   slug: string;
   startDate: string;
@@ -34,11 +41,13 @@ interface Chama {
 const ExploreScreen = () => {
   const [publicChamas, setPublicChamas] = useState<Chama[]>([]);
   const [tab, setTab] = useState("Started"); // Tab state: "Started" or "Not Started"
-  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedChama, setSelectedChama] = useState<Chama | null>(null);
+  const [buttonText, setButtonText] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     const getPublicChamas = async () => {
@@ -49,15 +58,13 @@ const ExploreScreen = () => {
       }
 
       try {
-        const response = await fetch(`${url}/mychamas`, {
+        const response = await fetch(`${url}/chama/chamas`, {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
         const results = await response.json();
         if (response.ok) {
-          setPublicChamas(
-            results.filter((chama: Chama) => chama.type === "Public")
-          );
+          setPublicChamas(results.chamas);
         } else {
           console.log(results.message);
         }
@@ -66,14 +73,60 @@ const ExploreScreen = () => {
       }
     };
     getPublicChamas();
-  }, []);
+  }, [publicChamas]);
 
-  const filteredChamas = publicChamas.filter((chama) =>
+  const filteredChamas = publicChamas?.filter((chama) =>
     tab === "Started" ? chama.started : !chama.started
   );
 
-  const handlePayment = () => {
-    console.log("done");
+  const handleChamaNavigation = (chamaId: number) => {
+    router.push({ pathname: "/(chamatabs)/[chamaId]", params: { chamaId } });
+  };
+
+  const handlePayment = async (
+    amount: string,
+    chamaId: number,
+    chamaName: string
+  ) => {
+    try {
+      setIsProcessing(true);
+      setErrorMessage("");
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        console.log("No token found");
+        return;
+      }
+      setButtonText(`Locking ...`);
+      const response = await fetch(`${url}/chama/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: amount,
+          chamaId: chamaId,
+          blockchainId: selectedChama?.blockchainId,
+          creation: false,
+        }),
+      });
+      const results = await response.json();
+      if (response.ok) {
+        //return the txHash
+        Alert.alert(
+          "Success",
+          `✨ Congratulations.✨\n\nYou've successfully joined ${chamaName}!`,
+          [{ text: "OK", onPress: () => handleChamaNavigation(chamaId) }]
+        );
+      } else {
+        setErrorMessage(results.message || "Failed to create chama");
+      }
+    } catch (error) {
+      console.log(error);
+      setErrorMessage("Network error. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const renderEmptyState = () => (
@@ -91,38 +144,40 @@ const ExploreScreen = () => {
   );
 
   const renderChama = ({ item }: { item: Chama }) => (
-    <View style={styles.chamaCard}>
-      <Image
-        source={{
-          uri: `https://ipfs.io/ipfs/Qmd1VFua3zc65LT93Sv81VVu6BGa2QEuAakAFJexmRDGtX/${item.id}.jpg`,
-        }}
-        style={styles.chamaImage}
-      />
-      <View style={styles.chamaDetails}>
-        <Text style={styles.chamaTitle}>{item.name}</Text>
-        <Text style={styles.chamaInfo}>
-          {item.amount} cKES / {duration(item.cycleTime)}
-        </Text>
-        <Text style={styles.chamaInfo}>
-          Participants: {item.members.length} / {item.maxNo}
-        </Text>
-        <Text style={styles.chamaInfo}>
-          {item.started
-            ? `Next Payout: ${new Date(item.payDate).toDateString()}`
-            : `Start Date: ${new Date(item.startDate).toDateString()}`}
-        </Text>
-        <TouchableOpacity
-          style={styles.joinButton}
-          onPress={() => {
-            setSelectedChama(item);
-            console.log(item.id);
-            setModalOpen(true);
+    <TouchableOpacity onPress={() => handleChamaNavigation(item.id)}>
+      <View style={styles.chamaCard}>
+        <Image
+          source={{
+            uri: `https://ipfs.io/ipfs/Qmd1VFua3zc65LT93Sv81VVu6BGa2QEuAakAFJexmRDGtX/${item.id}.jpg`,
           }}
-        >
-          <Text style={styles.joinButtonText}>Join Chama</Text>
-        </TouchableOpacity>
+          style={styles.chamaImage}
+        />
+        <View style={styles.chamaDetails}>
+          <Text style={styles.chamaTitle}>{item.name}</Text>
+          <Text style={styles.chamaInfo}>
+            {Number(item.amount) / 10 ** 18} cKES / {duration(item.cycleTime)}
+          </Text>
+          <Text style={styles.chamaInfo}>
+            Participants: {item.members.length} / {item.maxNo}
+          </Text>
+          <Text style={styles.chamaInfo}>
+            {item.started
+              ? `Next Payout: ${new Date(item.payDate).toDateString()}`
+              : `Start Date: ${new Date(item.startDate).toDateString()}`}
+          </Text>
+          <TouchableOpacity
+            style={styles.joinButton}
+            onPress={() => {
+              setSelectedChama(item);
+              console.log(item.id);
+              setModalOpen(true);
+            }}
+          >
+            <Text style={styles.joinButtonText}>Join Chama</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -153,7 +208,7 @@ const ExploreScreen = () => {
           </Text>
         </TouchableOpacity>
       </View>
-      {filteredChamas.length === 0 ? (
+      {filteredChamas?.length === 0 ? (
         renderEmptyState()
       ) : (
         <FlatList
@@ -170,11 +225,19 @@ const ExploreScreen = () => {
             setModalOpen(false);
             setSelectedChama(null);
           }}
-          onProceed={handlePayment}
-          loading={isLoading}
-          processing={isProcessing}
-          amount={selectedChama?.amount || 0}
+          onProceed={() =>
+            handlePayment(
+              (Number(selectedChama?.amount) / 10 ** 18).toString() || "0",
+              selectedChama?.id || 0,
+              selectedChama?.name || ""
+            )
+          }
+          loading={isProcessing}
+          errText={errorMessage}
+          buttonText={buttonText}
+          amount={Number(selectedChama?.amount) / 10 ** 18 || 0}
           name={selectedChama?.name || ""}
+          creation={false}
         />
       }
     </View>

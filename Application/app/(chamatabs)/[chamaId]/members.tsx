@@ -15,10 +15,7 @@ interface User{
   role:string;
 }
 
-interface Member{
-  user: User;
 
-};
 interface Chama{
   id: number;
   name: string;
@@ -32,13 +29,13 @@ interface Chama{
   maxNo: number;
   adminId: number;
   createdAt: string;
-  members: Member [];
+  members: User[];
 }
 
 const GroupDetails = () => {
 
-  const [chama, setChama] = useState < Chama  >();
-  const [members , setMembers] = useState <Member []> ();
+  const [chama, setChama] = useState < Chama >();
+  const [members , setMembers] = useState <User []> ();
 
   const  chamaId  = useChamaId();
  
@@ -63,15 +60,13 @@ const GroupDetails = () => {
         });
         const results = await response.json();
         if (response.ok) {
-          console.log("gotten");
-          console.log(results);
-          setChama(results);
-          setMembers(results.members);
+          setChama(results.chama);
+          setMembers(results.chama.members);
         } else {
           console.log(results.message);
         }
       } catch (error) {
-        console.error(error);
+        console.log(error);
       }
     };
     fetchChama();
@@ -109,14 +104,14 @@ const GroupDetails = () => {
               <View style={{ flex: 1 }}>
         
         
-                    <Text style={{ fontSize: 16, fontWeight: "500", color: "#4e4e4e" }}>{member?.user?.name || "User"}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: "500", color: "#4e4e4e" }}>{member?.name || "User"}</Text>
                     <Text style={{ fontSize: 14, color: "#9e9e9e" }}>
-                      {member?.user?.address ? `${(member?.user?.address).slice(0, 6)}...${(member?.user?.address).slice(-4)}` : "Loading..."}
+                      {member?.address ? `${(member?.address).slice(0, 6)}...${(member?.address).slice(-4)}` : "Loading..."}
                     </Text>
         
         
               </View>
-              {member?.user?.id === chama?.adminId && <Text style={{ fontSize: 14, color: "#757575", textAlign: "right" }}>Admin</Text>}
+              {member?.id === chama?.adminId && <Text style={{ fontSize: 14, color: "#757575", textAlign: "right" }}>Admin</Text>}
             </View>
           ))}
         </View>

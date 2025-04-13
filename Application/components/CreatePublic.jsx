@@ -3,16 +3,20 @@ import {
   View,
   Text,
   TextInput,
+  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 
 import { url } from "@/constants/Endpoint";
+import Lock from "./Lock";
 
 export default function CreatePublic() {
   const [groupName, setGroupName] = useState("");
@@ -25,6 +29,9 @@ export default function CreatePublic() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [openLockModal, setOpenLocalModal] = useState(false);
+  const [buttonText, setButtonText] = useState("");
+  const router = useRouter();
 
   const handleDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
@@ -40,211 +47,364 @@ export default function CreatePublic() {
     setStartDate((prev) => `${prev} ${currentTime.toLocaleTimeString()}`);
   };
 
-  const handleSubmit = async () => {
-      // Validation check
-      if (!groupName || !amount || !startDate || !duration) {
-        setErrorMessage("Please fill in all the required fields.");
-        return;
-      }
+  //fnction to check legibility of inputs
+  const checkLegibility = () => {
+    setErrorMessage("");
+    if (!groupName || !amount || !startDate || !duration || !maxPeople) {
+      setErrorMessage("Please fill in all required fields");
+      return;
+    }
+    if (Number(maxPeople) <= 1) {
+      setErrorMessage("Maximum people must be greater than 1");
+      return;
+    }
+    if (Number(amount) <= 0) {
+      setErrorMessage("Amount should be greater than 0");
+      return;
+    }
+    setOpenLocalModal(true);
+  };
+
+  //function to handle the locking of amount b4 chama creation
+  const sendcUSD = async (amount, token) => {
     try {
-      setIsPending(true);
-      // Logic to handle form submission
-      console.log({
-        groupName,
-        maxPeople,
-        amount,
-        startDate,
-        duration,
+      setButtonText(`Locking ...`);
+      const response = await fetch(`${url}/chama/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: amount,
+          chamaId: null,
+          creation: true,
+        }),
       });
+      const results = await response.json();
+      if (response.ok) {
+        //return the txHash
+        return results;
+      }
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setErrorMessage("");
+      setIsPending(true);
       const token = await AsyncStorage.getItem("token");
       if (!token) {
         console.error("No token found");
         return;
       }
-      const response = await fetch(`${url}/public`, {
+      const txHash = await sendcUSD(amount, token);
+      if (!txHash) {
+        setErrorMessage("Failed to send cUSD! Ensure you have enough balance");
+        return;
+      }
+      setButtonText(`Creating ${groupName}...`);
+      const response = await fetch(`${url}/chama/public`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Include token here
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: groupName,
-          amount: amount,
-          maxNo: maxPeople,
-          days: duration,
-          startDate: 1738728250,
+          amount: parseFloat(amount),
+          maxNo: parseInt(maxPeople),
+          days: parseInt(duration),
+          startDate: startDate,
           isPublic: true,
+          txHash: txHash,
         }),
       });
       const results = await response.json();
       if (response.ok) {
-        console.log(results);
-        console.log("successful");
+        // Reset all form fields
+        setGroupName("");
+        setMaxPeople("");
+        setAmount("");
+        setStartDate("");
+        setDuration("");
+        setDate(new Date()); // Reset the date picker to current date
+
+        Alert.alert(
+          "Success",
+          `✨ ${results.createdChama.name.toUpperCase()} chama ✨\n\nCreated successfully!`,
+          [{ text: "OK", onPress: () => router.push({ pathname: "/(tabs)" }) }]
+        );
       } else {
-        console.log("unsuccessful");
-        console.log(results);
+        setErrorMessage(results.message || "Failed to create chama");
       }
     } catch (error) {
-      console.log(error);
+      setErrorMessage("Network error. Please try again.");
     } finally {
       setIsPending(false);
     }
-    // setTimeout(() => setIsPending(false), 2000); // Simulate async request
   };
 
   return (
-    <View style={styles.form}>
-       
-      <View style={styles.inputContainer}>
-        <Ionicons name="people" size={20} color={"#63c5da"} />
-        <TextInput
-          placeholder="Enter Group Name"
-          value={groupName}
-          onChangeText={setGroupName}
-          style={styles.input}
-        />
-      </View>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Enter Max No. of people"
-          value={maxPeople}
-          onChangeText={setMaxPeople}
-          keyboardType="numeric"
-          style={styles.input}
-        />
-      </View>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Contribution Amount (cKes)"
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="numeric"
-          style={styles.input}
-        />
-      </View>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Select Date"
-          value={startDate.split(" ")[0]} // Display only the date part
-          style={styles.input}
-          onFocus={() => setShowDatePicker(true)}
-        />
-        <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-          <Ionicons name="calendar" size={24} color="#63c5da" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Select Time"
-          value={startDate.split(" ")[1]} // Display only the time part
-          style={styles.input}
-          onFocus={() => setShowTimePicker(true)}
-        />
-        <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-          <Ionicons name="time" size={24} color="#63c5da" />
-        </TouchableOpacity>
-      </View>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
-      )}
-
-      {showTimePicker && (
-        <DateTimePicker
-          value={date}
-          mode="time"
-          display="default"
-          onChange={handleTimeChange}
-        />
-      )}
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Enter Cycle Time"
-          value={duration}
-          onChangeText={setDuration}
-          keyboardType="numeric"
-          style={styles.input}
-        />
-      </View>
-
-      <TouchableOpacity
-        onPress={handleSubmit}
-        disabled={isPending}
-        style={isPending ? styles.buttonDisabled : styles.button}
+    <View style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
       >
-        {isPending ? (
-          <View style={styles.indicatorButton}>
-            <ActivityIndicator size="small" color="#fff" />
-            <Text style={styles.buttonText}>Creating...</Text>
+        <View style={styles.formContainer}>
+          {errorMessage ? (
+            <View style={styles.errorContainer}>
+              <Ionicons name="warning" size={20} color="#ff4444" />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          ) : null}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Group Name</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons
+                name="globe"
+                size={20}
+                color="#63c5da"
+                style={styles.icon}
+              />
+              <TextInput
+                placeholder="e.g. Community Savings"
+                placeholderTextColor="#999"
+                value={groupName}
+                onChangeText={setGroupName}
+                style={styles.input}
+              />
+            </View>
           </View>
-        ) : (
-          <Text style={styles.buttonText}>Create Chama</Text>
-        )}
-      </TouchableOpacity>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Contribution Amount (cKES)</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons
+                name="cash"
+                size={20}
+                color="#63c5da"
+                style={styles.icon}
+              />
+              <TextInput
+                placeholder="e.g. 2000"
+                placeholderTextColor="#999"
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="numeric"
+                style={styles.input}
+              />
+            </View>
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Max Members</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons
+                name="people"
+                size={20}
+                color="#63c5da"
+                style={styles.icon}
+              />
+              <TextInput
+                placeholder="e.g. 50"
+                placeholderTextColor="#999"
+                value={maxPeople}
+                onChangeText={setMaxPeople}
+                keyboardType="numeric"
+                style={styles.input}
+              />
+            </View>
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Start Date & Time</Text>
+            <View style={styles.datetimeContainer}>
+              <TouchableOpacity
+                style={styles.datetimeButton}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar" size={18} color="#63c5da" />
+                <Text style={styles.datetimeText}>
+                  {startDate.split(" ")[0] || "Select Date"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.datetimeButton}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Ionicons name="time" size={18} color="#63c5da" />
+                <Text style={styles.datetimeText}>
+                  {startDate.split(" ")[1] || "Select Time"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Cycle Duration (days)</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons
+                name="repeat"
+                size={20}
+                color="#63c5da"
+                style={styles.icon}
+              />
+              <TextInput
+                placeholder="e.g. 30"
+                placeholderTextColor="#999"
+                value={duration}
+                onChangeText={setDuration}
+                keyboardType="numeric"
+                style={styles.input}
+              />
+            </View>
+          </View>
+          {showDatePicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="spinner"
+              onChange={handleDateChange}
+              minimumDate={new Date()}
+            />
+          )}
+          {showTimePicker && (
+            <DateTimePicker
+              value={date}
+              mode="time"
+              display="spinner"
+              onChange={handleTimeChange}
+            />
+          )}
+          <TouchableOpacity
+            onPress={checkLegibility}
+            disabled={isPending}
+            style={[
+              styles.submitButton,
+              isPending && styles.submitButtonDisabled,
+            ]}
+          >
+            <View style={styles.buttonContent}>
+              <Ionicons
+                name="earth"
+                size={20}
+                color="#fff"
+                style={styles.buttonIcon}
+              />
+              <Text style={styles.submitButtonText}>Create Public Chama</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+      <Lock
+        visible={openLockModal}
+        onClose={() => setOpenLocalModal(false)}
+        onProceed={handleSubmit}
+        loading={isPending}
+        errText={errorMessage}
+        buttonText={buttonText}
+        amount={amount}
+        name={groupName}
+        creation={true}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  form: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
+  container: {
+    flex: 1,
   },
-  errorMessage: {
-    color: "red",
+  formContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffeeee",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  errorText: {
+    color: "#ff4444",
+    marginLeft: 8,
     fontSize: 14,
-    marginBottom: 10,
-    textAlign: "center",
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 8,
+    fontWeight: "500",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    backgroundColor: "#f8fafb",
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  icon: {
+    marginRight: 10,
   },
   input: {
     flex: 1,
-    marginLeft: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#63c5da",
-    paddingBottom: 4,
     fontSize: 16,
+    color: "#333",
   },
-  button: {
+  datetimeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  datetimeButton: {
+    flex: 0.48,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fafb",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    justifyContent: "center",
+  },
+  datetimeText: {
+    marginLeft: 8,
+    color: "#555",
+  },
+  submitButton: {
     backgroundColor: "#63c5da",
-    paddingVertical: 12,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    shadowColor: "#4a90e2",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#8bb8f0",
+  },
+  buttonContent: {
+    flexDirection: "row",
     alignItems: "center",
   },
-  buttonDisabled: {
-    backgroundColor: "#cccccc",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
+  buttonIcon: {
+    marginRight: 8,
   },
-  buttonText: {
+  submitButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-  },
-  indicatorButton:{
-    flexDirection:'row',
-    justifyContent:'space-between',
-    alignItems:'center',
-    marginBottom:20
   },
 });

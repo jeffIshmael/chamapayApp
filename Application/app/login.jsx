@@ -7,10 +7,10 @@ import {
   Button,
   StyleSheet,
   Pressable,
+  Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import Svg, { Path } from "react-native-svg";
 import { useRouter } from "expo-router";
-import { Link } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -18,67 +18,82 @@ import { url } from "../constants/Endpoint";
 
 const LoginScreen = () => {
   const [login, setLogin] = useState(true);
-  // const navigation = useNavigation(); // Initialize navigation
   const [email, setEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
+  const [errorText, setErrorText] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const router = useRouter();
 
-  const navigateToHome = () => {
-    router.push("/(tabs)"); // Adjust the route based on your folder structure
-  };
-
   const handleLogin = async () => {
+    setErrorText("");
     if (!email || !password) {
+      setErrorText("All fields are required");
       return;
     }
     if (email === "" || password === "") {
+      setErrorText("Enter valid details.");
       return;
     }
     try {
-      const response = await fetch(`${url}/login`, {
+      setLoading(true);
+      const response = await fetch(`${url}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
+
       if (response.ok) {
         await AsyncStorage.setItem("token", data.token);
-        console.log(data);
-        router.push("/(tabs)");
+        Alert.alert("Success", `Login successful.`, [
+          { text: "OK", onPress: () => router.push({ pathname: "/(tabs)" }) },
+        ]);
       } else {
         console.log(data.message);
       }
     } catch (error) {
-      console.error(error);
+      console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSignUp = async () => {
-    if (!email || !password) {
+    setErrorText("");
+    if (!email || !password || !userName) {
+      setErrorText("All fields are required");
       return;
     }
-    if (email === "" || password === "") {
+    if (email === "" || password === "" || userName === "") {
+      setErrorText("Enter valid details.");
       return;
     }
-    console.log(`${email}", "${password}`);
     try {
+      setLoading(true);
       const response = await axios
-        .post(`${url}/register`, {
+        .post(`${url}/auth/register`, {
           email: email,
           password: password,
         })
-        .then((response) => console.log(response.data))
+        .then((response) => {
+          Alert.alert(
+            "Success",
+            `Registration successful. You can now login!`,
+            [{ text: "OK", onPress: () => setLogin(true) }]
+          );
+        })
         .catch((error) => {
           console.error("Error response:", error.response.data); // Log the server response
-          alert("Registration failed: " + error.response.data.error);
+          setErrorText("Registration failed. Try again.");
         });
-      console.log(response.data);
     } catch (error) {
       console.log("error:", error);
+    } finally {
+      setLoading(false);
     }
   };
-
 
   return (
     <View style={styles.container}>
@@ -103,6 +118,12 @@ const LoginScreen = () => {
 
       {/* Login or Signup Form */}
       <View style={styles.formContainer}>
+        {errorText ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="warning" size={20} color="#ff4444" />
+            <Text style={styles.errorText}>{errorText}</Text>
+          </View>
+        ) : null}
         {login ? (
           <>
             <Text style={styles.formTitle}>Log In</Text>
@@ -115,21 +136,30 @@ const LoginScreen = () => {
             <TextInput
               placeholder="Password"
               style={styles.input}
-              onChangeText={(text) => setPassword(text)}
               secureTextEntry
+              onChangeText={(text) => setPassword(text)}
             />
             <TouchableOpacity>
               <Text style={styles.forgotText}>Forgot password?</Text>
             </TouchableOpacity>
 
             <Pressable>
-              <Button title="Log In" color="#00796b" onPress={handleLogin} />
+              <Button
+                title={loading ? "Loading..." : "Log In"}
+                style={styles.actionButton}
+                color="#00796b"
+                onPress={handleLogin}
+              />
             </Pressable>
           </>
         ) : (
           <>
             <Text style={styles.formTitle}>Sign Up</Text>
-            <TextInput placeholder="UserName" style={styles.input} />
+            <TextInput
+              placeholder="UserName"
+              style={styles.input}
+              onChangeText={(text) => setUserName(text)}
+            />
             <TextInput
               placeholder="Email"
               style={styles.input}
@@ -149,7 +179,12 @@ const LoginScreen = () => {
               onChangeText={(text) => setPassword(text)}
             />
             <Pressable>
-              <Button title="Sign Up" color="#00796b" onPress={handleSignUp} />
+              <Button
+                title={loading ? "Loading..." : "Sign Up"}
+                style={styles.actionButton}
+                color="#00796b"
+                onPress={handleSignUp}
+              />
             </Pressable>
           </>
         )}
@@ -163,34 +198,39 @@ const LoginScreen = () => {
       </View>
 
       {/* Continue with Google */}
-      <Pressable style={styles.googleButton} onPress={sendcUSD}>
-        <View style ={{flexDirection:"row",alignItems:"center",justifyContent:"space-between"}} >
-          <svg
+      <Pressable style={styles.googleButton}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Svg
             xmlns="http://www.w3.org/2000/svg"
             x="0px"
             y="0px"
             width="20"
             height="20"
             viewBox="0 0 48 48"
-                    
           >
-            <path
+            <Path
               fill="#FFC107"
               d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
-            ></path>
-            <path
+            ></Path>
+            <Path
               fill="#FF3D00"
               d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
-            ></path>
-            <path
+            ></Path>
+            <Path
               fill="#4CAF50"
               d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
-            ></path>
-            <path
+            ></Path>
+            <Path
               fill="#1976D2"
               d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"
-            ></path>
-          </svg>
+            ></Path>
+          </Svg>
           <Text style={styles.googleText}>Continue with google</Text>
         </View>
       </Pressable>
@@ -233,6 +273,14 @@ const styles = StyleSheet.create({
   toggleText: {
     color: "#FFF",
   },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffeeee",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
   formContainer: {
     backgroundColor: "#FFF",
     padding: 20,
@@ -256,6 +304,9 @@ const styles = StyleSheet.create({
     color: "#00796b",
     textAlign: "right",
     marginBottom: 10,
+  },
+  actionButton: {
+    padding: 15,
   },
   divider: {
     flexDirection: "row",
