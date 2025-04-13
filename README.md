@@ -11,13 +11,14 @@
 
 <p align="center">
   <a href="#introduction">Introduction</a> ·
-  <a href="#features">Features</a> ·
-  <a href="#how-it-works">How It Works</a> ·
-  <a href="#getting-started">Get Started</a>
+  <a href="#implemented-features">Features</a> ·
+  <a href="#how-chamapay-works">How It Works</a> ·
+  <a href="#getting-started">Get Started</a> .
+  <a href="#demo">Demo</a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-Mobile%20%26%20Web-brightgreen" alt="Platform">
+  <img src="https://img.shields.io/badge/Platform-MobileApp-brightgreen" alt="Platform">
   <img src="https://img.shields.io/badge/Blockchain-Celo-yellow" alt="Blockchain">
   <img src="https://img.shields.io/badge/License-MIT-blue" alt="License">
 </p>
