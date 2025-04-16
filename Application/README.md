@@ -24,7 +24,7 @@ Welcome to the Chamapay application! Below is a visual walkthrough of the key sc
 
 | Locking In                                       | Successful Creation                                    |
 | ------------------------------------------------ | ------------------------------------------------------ |
-| ![Locking](./assets/chamapayGallery/locking.jpg) | ![Success](./assets/chamapayGallery/successCreate.jpg) |
+| ![Locking](./assets/chamapayGallery/locking.jpg) | ![Success](./assets/chamapayGallery/succesCreate.jpg) |
 
 ---
 
@@ -32,7 +32,7 @@ Welcome to the Chamapay application! Below is a visual walkthrough of the key sc
 
 | Schedule                                           | Wallet Overview                                |
 | -------------------------------------------------- | ---------------------------------------------- |
-| ![Schedule](./assets/chamapayGallery/schedule.jpg) | ![Wallet](./assets/chamapayGallery/wallet.jpg) |
+| ![Schedule](./assets/chamapayGallery/shedule.jpg) | ![Wallet](./assets/chamapayGallery/wallet.jpg) |
 
 ---
 
