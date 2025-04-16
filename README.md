@@ -69,7 +69,7 @@ Chamapay solves these problems by offering a **digital circular savings platform
 ✅ **Smart Contract Automation**
 
 - Funds held in escrow and released automatically.
-- Enforced contributions and penalties for defaults.
+- Enhanced security to cater for defaults.
 
 ✅ **Transparency**
 
@@ -87,7 +87,7 @@ Chamapay solves these problems by offering a **digital circular savings platform
 | **Access**             | Open to all users                   | Invite-only (family & friends) |
 | **Default Protection** | Requires locked funds as collateral | Trust-based (no collateral)    |
 | **Max Members**        | Limited (configurable)              | No strict limit                |
-| **Security**           | Higher (auto-penalty system)        | Lower (relies on trust)        |
+| **Security**           | Locking system                      | Lower (relies on trust)        |
 
 ---
 
