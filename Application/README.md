@@ -1,50 +1,49 @@
-# Welcome to your Expo app 👋
+# 📱 Chamapay App Gallery
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Welcome to the Chamapay application! Below is a visual walkthrough of the key screens and features in the app.
 
-## Get started
+---
 
-1. Install dependencies
+## 🚀 Landing & Authentication
 
-   ```bash
-   npm install
-   ```
+| Landing Page                                     | Login Page                                   |
+| ------------------------------------------------ | -------------------------------------------- |
+| ![Landing](./assets/chamapayGallery/landing.jpg) | ![Login](./assets/chamapayGallery/login.jpg) |
 
-2. Start the app
+---
 
-   ```bash
-    npx expo start
-   ```
+## 🏠 Home & Navigation
 
-In the output, you'll find options to open the app in a
+| Home Page                                  | Explore Chamas                                   | Create Chama                                   |
+| ------------------------------------------ | ------------------------------------------------ | ---------------------------------------------- |
+| ![Home](./assets/chamapayGallery/home.jpg) | ![Explore](./assets/chamapayGallery/explore.jpg) | ![Create](./assets/chamapayGallery/create.jpg) |
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🔒 Locking & Success
 
-## Get a fresh project
+| Locking In                                       | Successful Creation                                    |
+| ------------------------------------------------ | ------------------------------------------------------ |
+| ![Locking](./assets/chamapayGallery/locking.jpg) | ![Success](./assets/chamapayGallery/successCreate.jpg) |
 
-When you're ready, run:
+---
 
-```bash
-npm run reset-project
-```
+## 📆 Schedule & Wallet
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+| Schedule                                           | Wallet Overview                                |
+| -------------------------------------------------- | ---------------------------------------------- |
+| ![Schedule](./assets/chamapayGallery/schedule.jpg) | ![Wallet](./assets/chamapayGallery/wallet.jpg) |
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## 💸 Transactions
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+| Send                                       | Deposit                                          | Withdraw                                           |
+| ------------------------------------------ | ------------------------------------------------ | -------------------------------------------------- |
+| ![Send](./assets/chamapayGallery/send.jpg) | ![Deposit](./assets/chamapayGallery/deposit.jpg) | ![Withdraw](./assets/chamapayGallery/withdraw.jpg) |
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+### 🌟 Thanks for checking out Chamapay!
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+> ✨ Bringing transparency and trust to group saving on-chain.

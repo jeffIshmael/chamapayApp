@@ -4,13 +4,14 @@ const {
   createPublicClient,
   http,
 } = require("viem");
-const { celoAlfajores } = require("viem/chains");
+const { celo } = require("viem/chains");
 
 const chamaPayAbi = require("../abis/chamapay.json");
 const { getUserAddress } = require("../controllers/userController");
+const {chamapayContractAddress} = require("../constants/contractAddress");
 
 const publicClient = createPublicClient({
-  chain: celoAlfajores,
+  chain: celo,
   transport: http(),
 });
 
@@ -18,7 +19,7 @@ const publicClient = createPublicClient({
 const getTotalChamas = async () => {
   try {
     const data = await publicClient.readContract({
-      address: "0xaaC8431C5401aF70cD802492A3e133667873c4Da",
+      address: chamapayContractAddress,
       abi: chamaPayAbi,
       functionName: "totalChamas",
     });
@@ -36,7 +37,7 @@ const getChamaBalance = async (BlockchainId, userId) => {
     // get user address from userId
     const userAddress = await getUserAddress(userId);
     const data = await publicClient.readContract({
-      address: "0xaaC8431C5401aF70cD802492A3e133667873c4Da",
+      address: chamapayContractAddress,
       abi: chamaPayAbi,
       functionName: "getBalance",
       args: [BigInt(BlockchainId), userAddress],

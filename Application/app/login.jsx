@@ -15,12 +15,14 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { url } from "../constants/Endpoint";
+import { Ionicons } from "@expo/vector-icons";
 
 const LoginScreen = () => {
   const [login, setLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [errorText, setErrorText] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -52,6 +54,7 @@ const LoginScreen = () => {
         ]);
       } else {
         console.log(data.message);
+        setErrorText(data.message ? data.message : "Login failed. Try again.");
       }
     } catch (error) {
       console.log(error);
@@ -70,29 +73,54 @@ const LoginScreen = () => {
       setErrorText("Enter valid details.");
       return;
     }
+    if (password !== confirmPassword) {
+      setErrorText("Passwords do not match");
+      return;
+    }
     try {
       setLoading(true);
       const response = await axios
         .post(`${url}/auth/register`, {
           email: email,
           password: password,
+          userName: userName,
         })
         .then((response) => {
           Alert.alert(
             "Success",
             `Registration successful. You can now login!`,
-            [{ text: "OK", onPress: () => setLogin(true) }]
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  resetFormFields();
+                  setLogin(true);
+                },
+              },
+            ]
           );
         })
         .catch((error) => {
-          console.error("Error response:", error.response.data); // Log the server response
-          setErrorText("Registration failed. Try again.");
+          setErrorText(
+            error.response.data.error
+              ? error.response.data.error
+              : "Registration failed. Try again."
+          );
         });
     } catch (error) {
       console.log("error:", error);
+      setErrorText("Registration failed. Try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetFormFields = () => {
+    setEmail("");
+    setUserName("");
+    setPassword("");
+    setConfirmPassword("");
+    setErrorText("");
   };
 
   return (
@@ -104,13 +132,19 @@ const LoginScreen = () => {
       <View style={styles.toggleContainer}>
         <TouchableOpacity
           style={[styles.toggleButton, login ? styles.activeToggle : null]}
-          onPress={() => setLogin(true)}
+          onPress={() => {
+            resetFormFields();
+            setLogin(true);
+          }}
         >
           <Text style={styles.toggleText}>Login</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.toggleButton, !login ? styles.activeToggle : null]}
-          onPress={() => setLogin(false)}
+          onPress={() => {
+            resetFormFields();
+            setLogin(false);
+          }}
         >
           <Text style={styles.toggleText}>Sign Up</Text>
         </TouchableOpacity>
@@ -130,12 +164,14 @@ const LoginScreen = () => {
             <TextInput
               placeholder="Email"
               style={styles.input}
+              value={email}
               keyboardType="email-address"
               onChangeText={(text) => setEmail(text)}
             />
             <TextInput
               placeholder="Password"
               style={styles.input}
+              value={password}
               secureTextEntry
               onChangeText={(text) => setPassword(text)}
             />
@@ -157,26 +193,30 @@ const LoginScreen = () => {
             <Text style={styles.formTitle}>Sign Up</Text>
             <TextInput
               placeholder="UserName"
+              value={userName}
               style={styles.input}
               onChangeText={(text) => setUserName(text)}
             />
             <TextInput
               placeholder="Email"
               style={styles.input}
+              value={email}
               keyboardType="email-address"
               onChangeText={(text) => setEmail(text)}
             />
             <TextInput
               placeholder="Password"
               style={styles.input}
+              value={password}
               secureTextEntry
               onChangeText={(text) => setPassword(text)}
             />
             <TextInput
               placeholder="Confirm Password"
               style={styles.input}
+              value={confirmPassword}
               secureTextEntry
-              onChangeText={(text) => setPassword(text)}
+              onChangeText={(text) => setConfirmPassword(text)}
             />
             <Pressable>
               <Button

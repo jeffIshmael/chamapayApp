@@ -25,6 +25,7 @@
     "firebase-admin": "^13.0.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
     "nodemon": "^3.1.7",
     "permissionless": "^0.2.39",
     "thirdweb": "^5.93.13",

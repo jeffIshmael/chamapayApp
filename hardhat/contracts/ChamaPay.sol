@@ -26,7 +26,7 @@ contract ChamaPay is Ownable,ReentrancyGuard {
     constructor() Ownable(msg.sender) {
 
     aiAgent = msg.sender;
-    cKESToken = IERC20(0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1);
+    cKESToken = IERC20(0x456a3D042C0DbD3db53D5489e98dFb038553B0d0);
     
     }
 
@@ -96,6 +96,7 @@ contract ChamaPay is Ownable,ReentrancyGuard {
         newChama.payDate = _startDate + _duration;
         newChama.admin = msg.sender;
         newChama.members.push(msg.sender);
+        newChama.payoutOrder.push(msg.sender);
         newChama.cycle = 1;
         newChama.round = 1;
         newChama.balances[msg.sender] = 0;
@@ -184,14 +185,14 @@ contract ChamaPay is Ownable,ReentrancyGuard {
     // Disburse funds to a member
     function disburse(uint _chamaId) internal nonReentrant {
         Chama storage chama = chamas[_chamaId];        
-        require(chama.members.length > 0, "Payout order is empty");
-        address recipient = chama.members[chama.cycle % chama.members.length];
+        require(chama.payoutOrder.length > 0, "Payout order is empty");
+        address recipient = chama.members[chama.cycle % chama.payoutOrder.length];
         uint totalPay = chama.amount * chama.members.length;
 
         // Calculate total available funds: sum of all balances + sum of all lockedAmounts (for public chamas)
         uint totalAvailable = 0;
-        for (uint i = 0; i < chama.members.length; i++) {
-            address member = chama.members[i];
+        for (uint i = 0; i < chama.payoutOrder.length; i++) {
+            address member = chama.payoutOrder[i];
             totalAvailable += chama.balances[member];
             if(chama.isPublic){
                 totalAvailable += chama.lockedAmounts[member];
@@ -200,8 +201,8 @@ contract ChamaPay is Ownable,ReentrancyGuard {
         require(totalAvailable >= totalPay, "Not enough funds to disburse");
 
         // Ensure each member has contributed their amount, using lockedAmounts if necessary (only for public chamas)
-        for (uint i = 0; i < chama.members.length; i++) {
-            address member = chama.members[i];
+        for (uint i = 0; i < chama.payoutOrder.length; i++) {
+            address member = chama.payoutOrder[i];
             if (chama.balances[member] < chama.amount) {
                 require(chama.isPublic, "Member has not contributed and it's a private chama.");
                 uint deficit = chama.amount - chama.balances[member];
@@ -222,13 +223,13 @@ contract ChamaPay is Ownable,ReentrancyGuard {
         recordWithdrawal(_chamaId, recipient, totalPay);
 
         // Reset payment status for the next round and deduct balances
-        for (uint i = 0; i < chama.members.length; i++) {
-            chama.hasSent[chama.members[i]] = false;
-            chama.balances[chama.members[i]] -= chama.amount;
+        for (uint i = 0; i < chama.payoutOrder.length; i++) {
+            chama.hasSent[chama.payoutOrder[i]] = false;
+            chama.balances[chama.payoutOrder[i]] -= chama.amount;
         }
 
         // Check if we have completed a rotation
-        if (chama.cycle + 1 > chama.members.length) {
+        if (chama.cycle + 1 > chama.payoutOrder.length) {
             chama.round += 1; // Increment the round after one rotation
         }
         chama.payDate += chama.duration;
@@ -341,6 +342,7 @@ contract ChamaPay is Ownable,ReentrancyGuard {
 
         emit ChamaDeleted(_chamaId);
     }
+
 
    // Check pay date and trigger payout or refund
     function checkPayDate(uint[] memory chamaIds) public onlyAiAgent nonReentrant {
@@ -478,6 +480,12 @@ contract ChamaPay is Ownable,ReentrancyGuard {
         chama.isPublic
     );
 }
+
+    //function to get a chama payout order
+    function getChamaPayoutOrder(uint _chamaId) public view returns (address[] memory) {
+        Chama storage chama = chamas[_chamaId];
+        return chama.payoutOrder;
+    }
 
     //function to check that one is member
     function isMember(uint _chamaId, address _user) public view returns (bool) {

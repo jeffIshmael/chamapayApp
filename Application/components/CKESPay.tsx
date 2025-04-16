@@ -106,6 +106,7 @@ const CKESPay = ({
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response) {
+          // console.log(response.data);
           setBalance(Number(response.data.balance));
         }
       } catch (error) {
@@ -191,7 +192,7 @@ const CKESPay = ({
                 <Text style={styles.label}>Amount (cKES)</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="0.00"
+                  placeholder="0"
                   keyboardType="numeric"
                   value={amount}
                   onChangeText={handleAmountChange}
@@ -200,7 +201,7 @@ const CKESPay = ({
               </View>
 
               <Text style={styles.balanceText}>
-                Available balance: {balance} cKES
+                Available balance: {balance.toFixed(2)} cKES
               </Text>
 
               {fetchingTxFee ? (

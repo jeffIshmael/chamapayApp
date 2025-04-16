@@ -12,7 +12,9 @@ export default function Layout() {
   }
 
   return (
-    <ChamaProvider chamaId={chamaId}> {/* Wrap everything in ChamaProvider */}
+    <ChamaProvider chamaId={chamaId}>
+      {" "}
+      {/* Wrap everything in ChamaProvider */}
       <TabLayout />
     </ChamaProvider>
   );

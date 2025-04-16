@@ -7,16 +7,19 @@ const prisma = new PrismaClient();
 
 exports.register = async (req, res) => {
   const { email, password, userName } = req.body;
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  const formattedEmail = email.toLowerCase();
+  const existingUser = await prisma.user.findUnique({
+    where: { email: formattedEmail },
+  });
   if (existingUser) {
     return res.status(400).json({ error: "User already exists" });
   }
   const hashedPassword = await bcrypt.hash(password, 10);
   const wallet = await getWallets();
-  if(wallet){
+  if (wallet) {
     const user = await prisma.user.create({
       data: {
-        email,
+        email: email.toLowerCase(),
         name: userName,
         password: hashedPassword,
         address: wallet.address,
@@ -28,16 +31,18 @@ exports.register = async (req, res) => {
       expiresIn: "1h",
     });
     res.status(201).json({ token });
-  }else{
-    console.log("unable to.")
+  } else {
+    console.log("unable to.");
   }
-  
 };
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+  const formatEmail = email.toLowerCase();
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email: formatEmail },
+    });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid)

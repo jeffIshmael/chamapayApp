@@ -45,12 +45,16 @@ export default function CreateFamily() {
 
   const handleSubmit = async () => {
     setErrorMessage("");
-    if (!groupName || !amount || !startDate || !duration ) {
+    if (!groupName || !amount || !startDate || !duration) {
       setErrorMessage("Please fill in all required fields");
       return;
     }
-    if (Number(amount) <= 0) {
-      setErrorMessage("Amount should be greater than 0");
+    if (Number(amount) < 1) {
+      setErrorMessage("Minimum amount should be 1 cKES.");
+      return;
+    }
+    if (Number(duration) < 1) {
+      setErrorMessage("Minimum duration should be 1 day.");
       return;
     }
 
@@ -70,7 +74,7 @@ export default function CreateFamily() {
         body: JSON.stringify({
           name: groupName,
           amount: parseFloat(amount),
-          maxNo: parseInt(maxPeople) || 0,
+          maxNo: maxPeople ? parseInt(maxPeople) : 0,
           days: parseInt(duration),
           startDate: startDate,
           isPublic: false,
@@ -135,7 +139,10 @@ export default function CreateFamily() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Contribution Amount (cKES)</Text>
+          <Text style={styles.label}>
+            Contribution Amount (cKES){" "}
+            <Text style={{ color: "#666" }}>min 1 cKES</Text>
+          </Text>
           <View style={styles.inputContainer}>
             <Ionicons
               name="cash"
@@ -180,7 +187,10 @@ export default function CreateFamily() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Cycle Duration (days)</Text>
+          <Text style={styles.label}>
+            Cycle Duration (days)
+            <Text style={{ color: "#666" }}>min 1 day</Text>
+          </Text>
           <View style={styles.inputContainer}>
             <Ionicons
               name="repeat"
@@ -248,13 +258,15 @@ export default function CreateFamily() {
         >
           {isPending ? (
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <ActivityIndicator
-              size="small"
-              color="#fff"
-              style={{ marginRight: 8 }}
-            />
-            <Text style={styles.submitButtonText}>Creating {groupName} ...</Text>
-          </View>
+              <ActivityIndicator
+                size="small"
+                color="#fff"
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.submitButtonText}>
+                Creating {groupName} ...
+              </Text>
+            </View>
           ) : (
             <Text style={styles.submitButtonText}>Create Family Chama</Text>
           )}
@@ -291,9 +303,11 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: "#555",
-    marginBottom: 8,
-    fontWeight: "500",
+    color: "#333333",
+    marginBottom: 8, // Balanced spacing
+    fontWeight: "500", // Medium weight for clean emphasis
+    fontFamily: "System", // Or a specific professional font like 'Roboto' if available
+    letterSpacing: 0.2, // Subtle letter spacing for improved legibility
   },
   inputContainer: {
     flexDirection: "row",

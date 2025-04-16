@@ -58,15 +58,19 @@ export default function CreatePublic() {
       setErrorMessage("Maximum people must be greater than 1");
       return;
     }
-    if (Number(amount) <= 0) {
-      setErrorMessage("Amount should be greater than 0");
+    if (Number(amount) < 1) {
+      setErrorMessage("Minimum amount should be 1 cKES.");
+      return;
+    }
+    if (Number(duration) < 1) {
+      setErrorMessage("Minimum duration should be 1 day.");
       return;
     }
     setOpenLocalModal(true);
   };
 
   //function to handle the locking of amount b4 chama creation
-  const sendcUSD = async (amount, token) => {
+  const sendCKES = async (amount, token) => {
     try {
       setButtonText(`Locking ...`);
       const response = await fetch(`${url}/chama/send`, {
@@ -96,14 +100,15 @@ export default function CreatePublic() {
     try {
       setErrorMessage("");
       setIsPending(true);
+
       const token = await AsyncStorage.getItem("token");
       if (!token) {
         console.error("No token found");
         return;
       }
-      const txHash = await sendcUSD(amount, token);
+      const txHash = await sendCKES(amount, token);
       if (!txHash) {
-        setErrorMessage("Failed to send cUSD! Ensure you have enough balance");
+        setErrorMessage("Failed to send cKES! Ensure you have enough balance");
         return;
       }
       setButtonText(`Creating ${groupName}...`);
@@ -180,7 +185,9 @@ export default function CreatePublic() {
             </View>
           </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Contribution Amount (cKES)</Text>
+            <Text style={styles.label}>
+              Contribution Amount (cKES) — Min. 1 cKES
+            </Text>
             <View style={styles.inputContainer}>
               <Ionicons
                 name="cash"
@@ -241,7 +248,7 @@ export default function CreatePublic() {
             </View>
           </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Cycle Duration (days)</Text>
+            <Text style={styles.label}>Cycle Duration (days) — Min. 1 day</Text>
             <View style={styles.inputContainer}>
               <Ionicons
                 name="repeat"

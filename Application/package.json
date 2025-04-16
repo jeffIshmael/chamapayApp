@@ -60,7 +60,8 @@
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.19.10",
     "thirdweb": "^5.84.0",
-    "web3": "1.10"
+    "web3": "1.10",
+    "expo-image": "~2.0.7"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

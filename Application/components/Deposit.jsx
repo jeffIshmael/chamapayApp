@@ -11,9 +11,11 @@ const DepositsHistory = ({ chamaId }) => {
   };
 
   const [deposits, setDeposits] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const getDeposits = async () => {
+      setIsLoading(true);
       const token = await AsyncStorage.getItem("token");
       if (!token) {
         console.log("No token found");
@@ -33,6 +35,8 @@ const DepositsHistory = ({ chamaId }) => {
         }
       } catch (error) {
         console.log(error);
+      }finally {
+        setIsLoading(false);
       }
     };
     getDeposits();
@@ -50,7 +54,7 @@ const DepositsHistory = ({ chamaId }) => {
   const renderItem = ({ item }) => (
     <View style={styles.depositItem}>
       <View style={styles.itemHeader}>
-        <Text style={styles.userName}>You locked </Text>
+        <Text style={styles.userName}>{item.description ? item.description : "You deposited"} </Text>
       </View>
       <View style={styles.amountInfo}>
         <Text style={styles.amountText}>
@@ -62,6 +66,13 @@ const DepositsHistory = ({ chamaId }) => {
       </View>
     </View>
   );
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text>Loading deposits...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -76,7 +87,7 @@ const DepositsHistory = ({ chamaId }) => {
           data={deposits}
           keyExtractor={(item, index) => index.toString()}
           renderItem={renderItem}
-          nestedScrollEnabled
+          scrollEnabled={false}
         />
       )}
     </View>

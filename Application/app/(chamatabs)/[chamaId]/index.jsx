@@ -16,9 +16,9 @@ import { url } from "@/constants/Endpoint";
 import { duration } from "@/constants/Cycle";
 import { useChamaId } from "../../context/ChamaContext";
 import Lock from "@/components/Lock";
+import { imageMap } from "@/constants/Images";
 
 const Details = () => {
-  const [started, setStarted] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [openLockModal, setOpenLockModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -123,7 +123,13 @@ const Details = () => {
   if (loading) {
     // Render a loading indicator while data is being fetched
     return (
-      <View style={styles.container}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
         <ActivityIndicator
           size="large"
           color="#00796B"
@@ -149,23 +155,20 @@ const Details = () => {
         {chama.started ? (
           <View style={styles.status}>
             <View style={styles.statusCircleStarted} />
-            <Text>Started</Text>
+            <Text style={styles.statusText}>Started</Text>
           </View>
         ) : (
           <View style={styles.status}>
             <View style={styles.statusCircleNotStarted} />
-            <Text>Not Started</Text>
+            <Text style={styles.statusText}>Not Started</Text>
           </View>
         )}
       </View>
-
       <View style={styles.chamaCard}>
         {/* Image */}
         <View style={styles.imageContainer}>
           <Image
-            source={{
-              uri: `https://ipfs.io/ipfs/Qmd1VFua3zc65LT93Sv81VVu6BGa2QEuAakAFJexmRDGtX/${chama.id.toString()}.jpg`,
-            }}
+            source={imageMap[(chama.id).toString()] || require('@/assets/images/default.png')}
             style={styles.image}
           />
         </View>
@@ -182,7 +185,13 @@ const Details = () => {
         <Text style={styles.chamaDate}>
           {chama.started
             ? `PayDate: ${new Date(chama.payDate).toDateString()}`
-            : `StartDate: ${new Date(chama.startDate).toDateString()}`}
+            : `Start Date: ${new Date(chama.startDate).toLocaleString(undefined, {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}`}
         </Text>
 
         {/* Pay Button */}
@@ -212,11 +221,12 @@ const Details = () => {
               router.push("/(chamatabs)/[chamaId]/chat");
             }}
           >
-            <Ionicons name="chatbubbles-outline" size={24} />
+            <Text>
+              <Ionicons name="chatbubbles-outline" size={24} />
+            </Text>
           </TouchableOpacity>
         )}
       </View>
-
       {/* Payment Modal */}
       {openModal && (
         <PaymentModal
@@ -227,7 +237,6 @@ const Details = () => {
           blockchainId={chama.blockchainId}
         />
       )}
-
       {/* Lock Modal to join public chama*/}
       {
         <Lock
@@ -291,6 +300,10 @@ const styles = StyleSheet.create({
     backgroundColor: "gray",
     borderRadius: 6,
     marginRight: 8,
+  },
+  statusText: {
+    fontSize: 14,
+    color: "#333",
   },
   chamaCard: {
     backgroundColor: "white",

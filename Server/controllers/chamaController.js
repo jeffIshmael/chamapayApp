@@ -5,7 +5,7 @@ const { getUserPrivateKey } = require("./userController");
 const {
   joinPrivateChama,
   registerChama,
-  sendCUSD,
+  sendCKES,
   joinPublicChama,
   recordDeposit,
 } = require("../utils/walletUtils");
@@ -13,6 +13,7 @@ const { getTotalChamas, getChamaBalance } = require("../utils/readFunctions");
 const {
   convertDateToTimestamp,
   recordPaymentAndLocked,
+  changeDateToRequire,
 } = require("../utils/helperFunctions");
 const prisma = new PrismaClient();
 
@@ -33,29 +34,23 @@ exports.registerChama = async (req, res) => {
   let blockchainId;
   try {
     //convert selected date
-    const dateObject = await convertDateToTimestamp(startDate);
+    const timestamp = await convertDateToTimestamp(startDate);
 
-    // Validate the date
-    if (isNaN(dateObject.getTime())) {
-      return res.status(400).json({ error: "Invalid date format" });
-    }
+    const prismaStartDate = await changeDateToRequire(startDate);
 
-    // Convert to Unix timestamp (seconds)
-    const unixTimestampSeconds = Math.floor(dateObject.getTime() / 1000);
-
-    // Calculate payDate (startDate + days)
-    const payDate = new Date(dateObject.getTime() + days * 24 * 60 * 60 * 1000);
+    // Add days to get payDate
+    const payDate = new Date(prismaStartDate);
+    payDate.setDate(payDate.getDate() + days);
 
     const createdChamaBlockchainId = await getTotalChamas();
     //the blockchain id of the created chama
     blockchainId = Number(createdChamaBlockchainId);
-    console.log(`blockchain Id of the newly created chama is ${blockchainId}`);
 
     // writing to blockchain
     const tx = await registerChama(privateKey, {
       amount: BigInt(amount * 10 ** 18),
       duration: BigInt(days),
-      startDate: BigInt(unixTimestampSeconds), // Convert to Unix timestamp
+      startDate: BigInt(timestamp), // Convert to Unix timestamp
       maxNo: BigInt(maxNo),
       isPublic: isPublic,
     });
@@ -77,7 +72,7 @@ exports.registerChama = async (req, res) => {
           cycleTime: Number(days),
           maxNo: Number(maxNo),
           slug: unique,
-          startDate: dateObject,
+          startDate: prismaStartDate,
           payDate: payDate,
           blockchainId: blockchainId,
           admin: { connect: { id: req.user.userId } },
@@ -98,6 +93,7 @@ exports.registerChama = async (req, res) => {
       await recordPaymentAndLocked(
         amount,
         req.user.userId,
+        "You locked",
         createdChama.id,
         txHash
       );
@@ -161,7 +157,7 @@ exports.joinPublicChama = async (req, res) => {
       },
     });
     // record the payment and locked amount
-    await recordPaymentAndLocked(amount, userId, chamaId, txHash);
+    await recordPaymentAndLocked(amount, userId, "You locked", chamaId, txHash);
     res.status(201).json({ message: "Member added successfully" });
   } catch (error) {
     res.status(500).json({ error: "Failed to add member" });
@@ -191,6 +187,11 @@ exports.getAllChamas = async (req, res) => {
             },
           },
         },
+        payOutOrder: false,
+        payOuts: false,
+      },
+      orderBy: {
+        startDate: "asc",
       },
     });
 
@@ -204,11 +205,10 @@ exports.getAllChamas = async (req, res) => {
       chamas: formattedChamas,
     });
   } catch (error) {
-    console.error("Error fetching non-member chamas:", error);
+    console.log("Error fetching non-member chamas:", error);
     res.status(500).json({
       error: "Failed to fetch chamas",
-      details:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
+      details: error.message,
     });
   }
 };
@@ -283,29 +283,24 @@ exports.getChamaById = async (req, res) => {
             },
           },
         },
+        payOuts: {
+          select: {
+            amount: true,
+            timestamp: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
+              },
+            },
+          },
+        },
       },
     });
 
     if (!chama) {
       return res.status(404).json({ error: "Chama not found" });
-    }
-
-    //  fetch locked amount if chama is public and user has locked amount
-    let userLockedAmount = null;
-    if (chama.type === "Public") {
-      const lockedAmount = await prisma.lockedAmount.findFirst({
-        where: {
-          chamaId: Number(chamaId),
-          userId: Number(userId),
-        },
-        select: {
-          amount: true,
-        },
-      });
-
-      if (lockedAmount) {
-        userLockedAmount = lockedAmount.amount.toString();
-      }
     }
 
     // Check if the requesting user is a member
@@ -316,7 +311,7 @@ exports.getChamaById = async (req, res) => {
       },
     });
     const chamaBlockchainId = chama.blockchainId;
-
+    // getting a user's balance from s.c
     const chamaBalance = await getChamaBalance(chamaBlockchainId, userId);
 
     // Prepare the response
@@ -325,8 +320,16 @@ exports.getChamaById = async (req, res) => {
         ...chama,
         amount: chama.amount.toString(),
         members: chama.members.map((m) => m.user), // Simplifys members structure
+        payOuts: chama.payOuts
+          ? chama.payOuts.map((p) => ({
+              ...p,
+              amount: p.amount.toString(), // Convert BigInt to string
+              // Format date if needed
+              timestamp: p.timestamp.toISOString(),
+            }))
+          : [], // Handle case where payOuts is null/undefined
+        payoutOrder: chama.payoutOrder ? JSON.parse(chama.payoutOrder) : [], // Parse JSON string,
       },
-      lockedAmount: userLockedAmount, // either the amount string or null
       isMember: !!isMember,
       chamaBalance: chamaBalance.map((m) => m.toString()),
     };
@@ -363,6 +366,7 @@ exports.createMessage = async (req, res) => {
 // get a chama's messages
 exports.getChamaMessages = async (req, res) => {
   const { chamaId } = req.params;
+  const userId = req.user.userId;
   try {
     const chama = await prisma.chama.findUnique({
       where: {
@@ -394,6 +398,13 @@ exports.getChamaMessages = async (req, res) => {
       },
     });
     const me = req.user.userId;
+    // checking if user is a member
+    const isMember = await prisma.chamaMember.findFirst({
+      where: {
+        chamaId: Number(chamaId),
+        userId: Number(userId),
+      },
+    });
 
     //preparing response
     const response = {
@@ -402,6 +413,7 @@ exports.getChamaMessages = async (req, res) => {
         amount: chama.amount.toString(),
       },
       me: me,
+      isMember: !!isMember,
     };
     res.status(200).json(response);
   } catch (error) {
@@ -417,6 +429,9 @@ exports.getChamaDeposit = async (req, res) => {
       where: {
         chamaId: Number(chamaId),
         userId: req.user.userId,
+      },
+      orderBy: {
+        doneAt: "desc",
       },
     });
 
@@ -448,13 +463,16 @@ exports.updateChamaDeposit = async (req, res) => {
   try {
     // Doing the blockchain fxns i.e snding cUSD& recording the deposit to the sc.
     // 1. First send cUSD
-    const sendingTx = await sendCUSD(privateKey, amount);
+    const sendingTx = await sendCKES(privateKey, amount);
 
     // 2. Only if successful, record deposit
     const recordingReceipt = await recordDeposit(privateKey, {
       blockchainId: BigInt(blockchainId),
       amount: amount,
     });
+    if (!recordingReceipt) {
+      return res.status(400).json({ error: "Failed to record deposit." });
+    }
     txHash = sendingTx;
     if (!txHash) {
       return res
@@ -465,6 +483,7 @@ exports.updateChamaDeposit = async (req, res) => {
       data: {
         amount: parseEther(amount),
         txHash,
+        description: "You deposited",
         userId: req.user.userId,
         chamaId: Number(chamaId),
       },
@@ -486,19 +505,20 @@ exports.sendToChama = async (req, res) => {
     return res.status(400).json({ error: "No privateKey!" });
   }
   try {
-    const txHash = await sendCUSD(privateKey, amount);
+    const txHash = await sendCKES(privateKey, amount);
     if (!txHash) {
       return res
         .status(400)
-        .json({ error: "Failed to send cUSD! Ensure you have enough balance" });
+        .json({ error: "Failed to send cKES! Ensure you have enough balance" });
     }
     if (!creation) {
       // adding member to the blockchain
-      const tx = await joinPublicChama(privateKey, BigInt(blockchainId));
+      const tx = await joinPublicChama(
+        privateKey,
+        BigInt(Number(blockchainId))
+      );
       if (!tx) {
-        return res
-          .status(400)
-          .json({ error: "Failed to write on the blockchain." });
+        return res.status(400).json({ error: "Ensure you have enough gas." });
       }
       console.log("creating on prisma.");
       await prisma.chamaMember.create({
@@ -509,7 +529,13 @@ exports.sendToChama = async (req, res) => {
         },
       });
       // record the payment and locked amount
-      await recordPaymentAndLocked(Number(amount), userId, chamaId, txHash);
+      await recordPaymentAndLocked(
+        Number(amount),
+        userId,
+        "You locked",
+        chamaId,
+        txHash
+      );
     }
     console.log(`locked amout hash :${txHash}`);
     res.status(201).json(txHash);
@@ -517,4 +543,19 @@ exports.sendToChama = async (req, res) => {
     console.log(error);
     res.status(500).json({ error: "Failed to record deposit" });
   }
+};
+
+//function to geta chama payouts
+exports.getChamaPayouts = async (req, res) => {
+  const { chamaId } = req.params;
+  try {
+    const chama = await prisma.chama.findUnique({
+      where: {
+        id: chamaId,
+      },
+      include: {
+        payOuts: true,
+      },
+    });
+  } catch (error) {}
 };

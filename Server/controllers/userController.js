@@ -1,7 +1,8 @@
 // this file has all ser related functions
 const { PrismaClient } = require("@prisma/client");
 
-const { getCUSDBalance } = require("../utils/walletUtils");
+const { getCKESBalance } = require("../utils/walletUtils");
+const { getCKESTransactions } = require("../utils/helperFunctions");
 
 const prisma = new PrismaClient();
 
@@ -14,25 +15,49 @@ exports.getUser = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // fetch the balance of the user
-    const balance = await getCUSDBalance(user.address);
-    const userWithBalance = { ...user, balance };
-    res.status(200).json(userWithBalance);
+    const balance = await getCKESBalance(user.address);
+    // fetch user's transactions
+    const userTxs = await getCKESTransactions(user.address);
+    if (userTxs == null) {
+      return res.status(404).json({ message: "Can't get users transactions" });
+    }
+    const formattedResponse = { ...user, balance, userTxs };
+
+    res.status(200).json(formattedResponse);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
 //function to get user's all payments
+// get a user's payments
 exports.getUserPayments = async (req, res) => {
+  const userId = req.user.userId;
   try {
     const payments = await prisma.payment.findMany({
       where: {
-        userId: req.user.userId,
+        userId: Number(userId),
+      },
+
+      orderBy: {
+        doneAt: "desc", // latest payments first
       },
     });
-    res.status(200).json(payments);
+
+    // Format the BigInt values for client-friendly response
+    const formatted = payments.map((payment) => ({
+      id: payment.id,
+      amount: payment.amount.toString(),
+      doneAt: payment.doneAt.toISOString(),
+      txHash: payment.txHash,
+      description: payment.description,
+      chama: payment.chama,
+    }));
+
+    res.status(200).json({ payments: formatted });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch payments" });
+    console.error("Failed to fetch user payments:", error);
+    res.status(500).json({ error: "Failed to fetch user payments" });
   }
 };
 

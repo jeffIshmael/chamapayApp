@@ -23,7 +23,6 @@
   <img src="https://img.shields.io/badge/License-MIT-blue" alt="License">
 </p>
 
-
 ## Introduction
 
 Chamapay is a mobile application that digitizes circular savings groups (commonly known as "chamas" in East Africa). It leverages blockchain technology to provide a secure, transparent, and accessible platform for group savings and financial collaboration.
@@ -129,7 +128,7 @@ Chamapay solves these problems by offering a **digital circular savings platform
 
 ## Implemented Features
 
-- ✅ Smart contract deployment (Celo)
+- ✅ Smart contract deployment (Celo) [View smart contract](https://celoscan.io/address/0x0E7ae45bB8CC7f649fDeaefa54E5356a6C25c3B7)
 - ✅ Chama creation (public/private)
 - ✅ Join public chamas
 - ✅ Deposit funds (cKES via M-Pesa or wallet)
@@ -154,7 +153,7 @@ Chamapay solves these problems by offering a **digital circular savings platform
 
 ## Demo
 
-📹 Watch our demo video: [YouTube Link](#) _(Add link when available)_
+📹 Watch our demo video: [YouTube Link](https://youtu.be/JiQXT1SIHPI)
 
 ---
 

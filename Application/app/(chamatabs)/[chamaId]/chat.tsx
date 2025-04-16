@@ -8,12 +8,16 @@ import {
   StyleSheet,
   Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons"; // Assuming you're using Expo
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { url } from "@/constants/Endpoint";
 import { useChamaId } from "@/app/context/ChamaContext";
+import { background } from "@/constants/Colors";
+import { imageMap } from "@/constants/Images";
+import { useRouter } from "expo-router";
 
 interface User {
   name: string;
@@ -58,13 +62,17 @@ const ChatComponent = () => {
   const [allDetails, setAllDetails] = useState<Detail>();
   const [messages, setMessages] = useState<Message[]>();
   const [text, setText] = useState("");
+  const [isMember, setIsMember] = useState<boolean | null> (null);
   const chamaId = useChamaId();
+  const router = useRouter()
   const [isSending, setIsSending] = useState(false);
   const textInputRef = useRef<TextInput>(null);
   const messagesEndRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     const fetchChama = async () => {
+      setLoading(true);
+
       const token = await AsyncStorage.getItem("token");
       if (!token) {
         console.log("No token found");
@@ -80,12 +88,15 @@ const ChatComponent = () => {
           setAllDetails(results);
           setChama(results?.chama);
           setMessages(results?.chama?.messages);
+          setIsMember(results.isMember);
           //   setMembers(results.members);
         } else {
           console.log(results.message);
         }
       } catch (error) {
         console.log(error);
+      }finally{
+        setLoading(false);
       }
     };
     fetchChama();
@@ -110,7 +121,7 @@ const ChatComponent = () => {
       return;
     }
 
-    const tempId = Date.now();
+    const tempId = Date.now() + Math.random();
     const newMessage: Message = {
       id: tempId,
       senderId: allDetails?.me || 0,
@@ -175,18 +186,56 @@ const ChatComponent = () => {
     setIsSending(false);
   };
 
+  const handleChamaNavigation = (chamaId: number) => {
+    router.push({ pathname: "/(chamatabs)/[chamaId]", params: { chamaId } });
+  };
+
+
+  if (!isMember && !loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 16,
+          backgroundColor: background,
+        }}
+      >
+        <Text style={{ fontSize: 14, fontWeight: "bold", marginBottom: 16 }}>
+          Join this chama to view chats
+        </Text>
+
+      </View>
+    );
+  }
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#e2e8f0",
+        }}
+      >
+        <ActivityIndicator size="large" color="#66d9d0" />
+        <Text style={{ marginTop: 16 }}>Loading chats...</Text>
+      </View>
+    );
+  }
+
   return (
     <>
       {/* Header Section */}
       <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity style={styles.backButton} onPress={()=>router.back}>
           <Ionicons name="arrow-back" size={24} color="#1F2937" />
         </TouchableOpacity>
         {chama && (
           <Image
-            source={{
-              uri: `https://ipfs.io/ipfs/Qmd1VFua3zc65LT93Sv81VVu6BGa2QEuAakAFJexmRDGtX/${(chama?.id).toString()}.jpg`,
-            }}
+          source={imageMap[(chama?.id).toString()] || require('@/assets/images/default.png')}
             style={styles.profilePic}
           />
         )}
@@ -279,7 +328,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: background,
     borderBottomWidth: 1,
     borderBottomColor: "#D1D5DB",
     shadowColor: "#000",
@@ -388,7 +437,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sendButton: {
-    backgroundColor: "#34D399",
+    backgroundColor: "#66d9d0",
     padding: 12,
     borderRadius: 8,
     marginLeft: 8,

@@ -613,6 +613,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_chamaId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getChamaPayoutOrder",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getChamas",
     "outputs": [

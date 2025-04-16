@@ -24,7 +24,7 @@ model User {
   notifications Notification[]
   payments      Payment[]
   messages      Message[] // Added relation to Message
-  lockedAmounts LockedAmount[]
+  payOuts       PayOut[]
 }
 
 model Chama {
@@ -42,33 +42,38 @@ model Chama {
   adminId       Int
   createdAt     DateTime       @default(now())
   image         String?
+  payOutOrder   String? // Json string of payout order array.
+  round         Int            @default(1) //after all members have been paid, this will be incremented
+  cycles        Int            @default(0) // after each payout, this will be incremented
   admin         User           @relation("AdminChamas", fields: [adminId], references: [id])
   members       ChamaMember[]
   requests      ChamaRequest[]
   notifications Notification[]
   payments      Payment[]
   messages      Message[] // Added relation to Message
-  lockedAmounts LockedAmount[]
+  payOuts       PayOut[]
 }
 
 model ChamaMember {
-  id      Int      @id @default(autoincrement())
-  userId  Int
-  chamaId Int
-  chama   Chama    @relation(fields: [chamaId], references: [id])
-  user    User     @relation(fields: [userId], references: [id])
-  payDate DateTime // To track the payment rotation date
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  chamaId        Int
+  payoutPosition Int?
+  chama          Chama    @relation(fields: [chamaId], references: [id])
+  user           User     @relation(fields: [userId], references: [id])
+  payDate        DateTime // To track the payment rotation date
 }
 
 model Payment {
-  id           Int      @id @default(autoincrement())
-  amount       BigInt
-  doneAt       DateTime @default(now())
-  txHash       String
-  userId       Int
-  chamaId      Int
-  chama        Chama    @relation(fields: [chamaId], references: [id])
-  user         User     @relation(fields: [userId], references: [id])
+  id          Int      @id @default(autoincrement())
+  amount      BigInt
+  doneAt      DateTime @default(now())
+  txHash      String
+  description String?
+  userId      Int
+  chamaId     Int
+  chama       Chama    @relation(fields: [chamaId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model Notification {
@@ -104,12 +109,12 @@ model Message {
   timestamp DateTime @default(now())
 }
 
-model LockedAmount {
+model PayOut {
   id        Int      @id @default(autoincrement())
   amount    BigInt
   chamaId   Int
   userId    Int
   chama     Chama    @relation(fields: [chamaId], references: [id])
-  user      User @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
   timestamp DateTime @default(now())
 }
